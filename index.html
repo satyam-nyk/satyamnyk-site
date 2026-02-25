@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Satyam Nayak – Technical Product Manager. Building high-impact platform products, AI systems & scalable solutions.">
+  <title>Satyam Nayak – Technical Product Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --max-width: 900px;
+      --space-xs: 0.5rem;
+      --space-s: 1rem;
+      --space-m: 2rem;
+      --space-l: 3.5rem;
+      --space-xl: 5rem;
+      --color-bg: #ffffff;
+      --color-bg-light: #f8f9fb;
+      --color-text: #1a202c;
+      --color-text-secondary: #4a5568;
+      --color-muted: #718096;
+      --color-border: #e2e8f0;
+      --color-accent: #2563eb;
+      --color-accent-dark: #1e40af;
+      --color-success: #10b981;
+      --radius-sm: 8px;
+      --radius: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      --shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 12px 32px 0 rgba(0, 0, 0, 0.12);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    html {
+      box-sizing: border-box;
+      font-size: 18px;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      scroll-behavior: smooth;
+    }
+    
+    *, *:before, *:after { box-sizing: inherit; }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: #ffffff;
+      color: var(--color-text);
+      font-weight: 400;
+      line-height: 1.6;
+      letter-spacing: -0.01em;
+    }
+    
+    main {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 5rem var(--space-m) 6rem var(--space-m);
+    }
+    
+    section {
+      margin-bottom: 6rem;
+    }
+    
+    section:last-child {
+      margin-bottom: 0;
+    }
+    
+    /* Hero Section */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-m);
+      margin-bottom: 6rem;
+      align-items: flex-start;
+    }
+    
+    .hero-name {
+      font-size: 3.5rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin: 0;
+      background: linear-gradient(135deg, #1a202c 0%, #2563eb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .hero-role {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--color-accent);
+      margin: 0;
+    }
+    
+    .hero-tagline {
+      font-size: 1.2rem;
+      color: var(--color-text);
+      max-width: 650px;
+      line-height: 1.7;
+      margin: var(--space-s) 0 var(--space-l) 0;
+    }
+    
+    .hero-subtext {
+      font-size: 1rem;
+      color: var(--color-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-m);
+      margin-bottom: var(--space-l);
+    }
+    
+    .hero-subtext span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.7);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .hero-subtext span:hover {
+      border-color: var(--color-accent);
+      background: rgba(37, 99, 235, 0.05);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+    }
+    
+    .hero-cta {
+      display: flex;
+      gap: var(--space-m);
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 0.875rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: var(--radius);
+      border: 2px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-text);
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .btn:hover, .btn:focus {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      border-color: var(--color-accent);
+    }
+    
+    .btn.primary {
+      background: var(--color-accent);
+      color: #fff;
+      border-color: var(--color-accent);
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+    }
+    
+    .btn.primary:hover {
+      background: var(--color-accent-dark);
+      border-color: var(--color-accent-dark);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+    }
+    
+    /* Section Titles */
+    .section-header {
+      margin-bottom: var(--space-l);
+    }
+    
+    .section-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 var(--space-s) 0;
+      color: var(--color-text);
+    }
+    
+    .section-subtitle {
+      font-size: 1rem;
+      color: var(--color-muted);
+      margin: 0;
+    }
+    
+    /* Impact Stats */
+    .impact-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-m);
+      margin: var(--space-l) 0;
+    }
+    
+    .stat-card {
+      background: var(--color-bg);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-m);
+      text-align: center;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .stat-card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow);
+      transform: translateY(-4px);
+    }
+    
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      margin: 0 0 var(--space-xs) 0;
+    }
+    
+    .stat-label {
+      font-size: 0.95rem;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0;
+      font-weight: 600;
+    }
+    
+    /* Expertise */
+    .expertise-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--space-m);
+    }
+    
+    .expertise-card {
+      background: var(--color-bg);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-m);
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .expertise-card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow);
+      transform: translateY(-4px);
+      background: var(--color-bg-light);
+    }
+    
+    .expertise-icon {
+      font-size: 2rem;
+      margin-bottom: var(--space-s);
+    }
+    
+    .expertise-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0 0 var(--space-xs) 0;
+      color: var(--color-text);
+    }
+    
+    .expertise-desc {
+      font-size: 0.95rem;
+      color: var(--color-muted);
+      margin: 0;
+      line-height: 1.6;
+    }
+    
+    /* Work Cards - Case Studies */
+    .case-study {
+      background: var(--color-bg);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-l);
+      margin-bottom: var(--space-m);
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .case-study:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+    
+    .case-study-badge {
+      display: inline-block;
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--color-accent);
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: var(--space-m);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .case-study-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin: 0 0 var(--space-s) 0;
+      color: var(--color-text);
+    }
+
+    .company-tagline {
+      font-size: 0.95rem;
+      color: #666;
+      line-height: 1.5;
+      margin: 0 0 var(--space-m) 0;
+      font-style: italic;
+    }
+    
+    .case-study-desc {
+      color: var(--color-text-secondary);
+      font-size: 1.05rem;
+      margin: 0 0 var(--space-m) 0;
+      line-height: 1.7;
+    }
+    
+    .case-study-highlights {
+      background: var(--color-bg-light);
+      border-left: 4px solid var(--color-accent);
+      padding: var(--space-m);
+      border-radius: var(--radius-sm);
+      margin: var(--space-m) 0;
+    }
+    
+    .case-study-highlights h4 {
+      margin: 0 0 var(--space-s) 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-accent);
+    }
+    
+    .highlights-list {
+      margin: 0;
+      padding: 0 0 0 var(--space-m);
+      list-style: none;
+    }
+    
+    .highlights-list li {
+      margin-bottom: var(--space-xs);
+      color: var(--color-text-secondary);
+      font-size: 0.95rem;
+      padding-left: var(--space-s);
+      position: relative;
+    }
+    
+    .highlights-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--color-success);
+      font-weight: bold;
+    }
+    
+    /* Work Cards - Simplified */
+    .company-card {
+      background: var(--color-bg);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-m);
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--space-m);
+    }
+    
+    .company-card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+    
+    .company-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0 0 var(--space-s) 0;
+      color: var(--color-text);
+    }
+    
+    .company-desc {
+      font-size: 0.95rem;
+      color: var(--color-muted);
+      margin: 0;
+      line-height: 1.6;
+    }
+    
+    /* Projects Section */
+    .projects-section {
+      margin-top: var(--space-xl);
+    }
+    
+    .project-card {
+      background: var(--color-bg);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-m);
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .project-card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow);
+      transform: translateY(-4px);
+    }
+    
+    .project-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0 0 var(--space-s) 0;
+      color: var(--color-text);
+    }
+    
+    .project-desc {
+      font-size: 0.95rem;
+      color: var(--color-muted);
+      margin: 0;
+      line-height: 1.6;
+    }
+    
+    /* Values & Approach */
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-m);
+    }
+    
+    .value-card {
+      background: var(--color-bg);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-m);
+      transition: var(--transition);
+    }
+    
+    .value-card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow);
+    }
+    
+    .value-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0 0 var(--space-s) 0;
+      color: var(--color-text);
+    }
+    
+    .value-desc {
+      font-size: 0.95rem;
+      color: var(--color-muted);
+      margin: 0;
+      line-height: 1.7;
+    }
+    
+    /* Education */
+    .education-card {
+      background: var(--color-bg);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-m);
+      transition: var(--transition);
+    }
+    
+    .education-card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow);
+      transform: translateY(-4px);
+    }
+    
+    /* Contact Block */
+    .contact-block {
+      background: linear-gradient(135deg, var(--color-accent) 0%, #1e40af 100%);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .contact-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 0 0 var(--space-m) 0;
+    }
+    
+    .contact-desc {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin: 0 0 var(--space-l) 0;
+    }
+    
+    .contact-cta {
+      display: flex;
+      gap: var(--space-m);
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .btn-white {
+      background: #fff;
+      color: var(--color-accent);
+      border-color: #fff;
+    }
+    
+    .btn-white:hover {
+      background: var(--color-bg-light);
+      border-color: var(--color-bg-light);
+    }
+    
+    /* Footer */
+    footer {
+      background: var(--color-text);
+      color: #fff;
+      padding: var(--space-l) var(--space-m);
+      text-align: center;
+      margin-top: var(--space-xl);
+    }
+    
+    .footer-content {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      font-size: 0.95rem;
+      opacity: 0.8;
+    }
+    
+    /* Responsive */
+    /* Navbar */
+    nav {
+      position: sticky;
+      top: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-s) var(--space-m);
+      z-index: 1000;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    
+    .nav-container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .nav-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--color-text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: var(--space-m);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .nav-links a {
+      color: var(--color-muted);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: var(--transition);
+    }
+    
+    .nav-links a:hover {
+      color: var(--color-accent);
+    }
+    
+    /* Hero with Picture */
+    .hero-container {
+      display: flex;
+      gap: var(--space-l);
+      align-items: flex-start;
+      margin-bottom: 5rem;
+    }
+    
+    .hero-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-m);
+    }
+    
+    .hero-image-container {
+      flex: 0 0 200px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-s);
+      align-items: center;
+    }
+    
+    .hero-image {
+      width: 200px;
+      height: 200px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+      border: 2px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    
+    .hero-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    @media (max-width: 768px) {
+      .hero-container {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-m);
+      }
+      
+      .hero-image {
+        width: 150px;
+        height: 150px;
+      }
+      
+      .nav-links {
+        gap: var(--space-s);
+      }
+      
+      .nav-links a {
+        font-size: 0.9rem;
+      }
+      
+      .hero-name { font-size: 2rem; }
+      .impact-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    @media (max-width: 600px) {
+      html { font-size: 16px; }
+      main { padding: 2rem var(--space-s); }
+      .hero-name { font-size: 2rem; }
+      .section-title { font-size: 1.4rem; }
+      .impact-stats { grid-template-columns: 1fr; }
+      .expertise-grid { grid-template-columns: 1fr; }
+      .case-study { padding: var(--space-m); }
+      .contact-cta { flex-direction: column; }
+      .btn { width: 100%; text-align: center; }
+      .nav-links {
+        gap: var(--space-xs);
+        font-size: 0.85rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .hero-name { font-size: 2rem; }
+      .hero-subtext { gap: var(--space-s); }
+      .impact-stats { grid-template-columns: 1fr; }
+      main { padding: 1.5rem var(--space-xs); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-container">
+      <a href="#hero" class="nav-logo">Satyam Nayak</a>
+      <ul class="nav-links">
+        <li><a href="#impact">Impact</a></li>
+        <li><a href="#expertise">Skills</a></li>
+        <li><a href="#work">Work</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#education">Education</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+      <div class="hero-container">
+        <div class="hero-content">
+          <h1 class="hero-name">Satyam Nayak</h1>
+          <div class="hero-role">Technical Product Manager</div>
+          <p class="hero-tagline">I design and scale platform products, AI-driven systems, and integration-heavy workflows. Focused on 0 → 1 builds, growth systems, and metrics-driven execution.</p>
+          <div class="hero-subtext">
+            <span>5+ Years</span>
+            <span>Platform & Systems</span>
+            <span>Product Leadership</span>
+            <span>AI Integration</span>
+            <span>Startup Founder</span>
+            <span>Analytics & Metrics</span>
+          </div>
+          <div class="hero-cta">
+            <a href="#impact" class="btn primary">View Impact</a>
+            <a href="#work" class="btn">Case Studies</a>
+            <a href="mailto:satyam@satyamnyk.com" class="btn">Email</a>
+          </div>
+        </div>
+        
+        <div class="hero-image-container">
+          <div class="hero-image" id="pictureContainer">
+            <img src="./assets/profile.png" alt="Satyam Nayak" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Impact Stats -->
+    <section class="impact" id="impact">
+      <div class="section-header">
+        <h2 class="section-title">Measurable Impact</h2>
+        <p class="section-subtitle">Results driven by strategy, execution, and user-centric design</p>
+      </div>
+      <div class="impact-stats">
+        <div class="stat-card">
+          <div class="stat-value">50K+</div>
+          <div class="stat-label">Users Across Products</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">10K+</div>
+          <div class="stat-label">Monthly AI Calls</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">8+</div>
+          <div class="stat-label">Integrations Built</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">40%</div>
+          <div class="stat-label">AI Resolution Rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">30%</div>
+          <div class="stat-label">Referral Contribution</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">35%</div>
+          <div class="stat-label">Conversion Uplift</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">25+</div>
+          <div class="stat-label">Institutional Partners</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">20K+</div>
+          <div class="stat-label">Startup Transactions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">5K+</div>
+          <div class="stat-label">Residents Served</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Core Expertise -->
+    <section class="expertise-section" id="expertise">
+      <div class="section-header">
+        <h2 class="section-title">Core Expertise</h2>
+        <p class="section-subtitle">Skills & technologies that drive product success</p>
+      </div>
+      <div class="expertise-grid">
+        <div class="expertise-card">
+          <div class="expertise-icon">🏗️</div>
+          <h3 class="expertise-title">Platform Architecture</h3>
+          <p class="expertise-desc">Design and scale multi-tenant systems from zero. Cross-platform coordination (Web, iOS, Android) with focus on architectural decisions that enable growth.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">🤖</div>
+          <h3 class="expertise-title">AI & LLM Integration</h3>
+          <p class="expertise-desc">Shipped AI calling systems handling 10K+ calls monthly. Strategic LLM integration for product experiences and automating workflows.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">📊</div>
+          <h3 class="expertise-title">Analytics &amp; Metrics</h3>
+          <p class="expertise-desc">Analytics and experimentation frameworks using Mixpanel, GA4, SQL. Metrics design that informs roadmap and strategy decisions.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">🚀</div>
+          <h3 class="expertise-title">Growth Systems</h3>
+          <p class="expertise-desc">Built systems for wallet ($2M+ TPV), referral programs (30% acquisition), and monetization. Focus on sustainable growth mechanics.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">🔗</div>
+          <h3 class="expertise-title">API &amp; Integrations</h3>
+          <p class="expertise-desc">Designed and shipped 8+ third-party integrations (Facebook, Bing Maps, MapMyIndia). REST APIs enabling 8x faster integration velocity.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">🎯</div>
+          <h3 class="expertise-title">Product Discovery</h3>
+          <p class="expertise-desc">User interviews and market validation. Conducted 100+ discovery conversations with students, counselors, educators, and residents.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Work Experience -->
+    <section class="work" id="work">
+      <div class="section-header">
+        <h2 class="section-title">Work Experience</h2>
+        <p class="section-subtitle">Strategic initiatives that created measurable business outcomes</p>
+      </div>
+
+      <div class="case-study">
+        <span class="case-study-badge">Current Role · PropTech</span>
+        <h3 class="case-study-title">FirstLivingSpaces (Yukio)</h3>
+        <p class="company-tagline">PropTech platform delivering AI-driven co-living and serviced apartments for working professionals with community-driven living experiences.</p>
+        <p class="case-study-desc">Associate Product Manager. Ownership of platform and resident experiences for 5,000+ residents across premium co-living spaces. Architected AI calling system, wallet platform, and referral engine as interconnected systems, not isolated features.</p>
+        <div class="case-study-highlights">
+          <h4>Key Achievements</h4>
+          <ul class="highlights-list">
+            <li>Architected AI Calling Agent handling 10K+ monthly calls with 40% resolution rate</li>
+            <li>Designed wallet system processing referalls and rent cashbacks transactions</li>
+            <li>Built referral program contributing 30% of new user acquisition</li>
+            <li>Conducted 20+ in-person focus groups with residents at premium institutes</li>
+            <li>Managed feature prioritization, workflows, and cross-functional execution (Aug 2025 - Present)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="case-study">
+        <span class="case-study-badge">Platform Build · EdTech</span>
+        <h3 class="case-study-title">The Education Match</h3>
+        <p class="company-tagline">EdTech platform delivering unified solution for students, counselors, and institutions to streamline education discovery and matching.</p>
+        <p class="case-study-desc">Product Manager. Led end-to-end product development and go-to-market for EdTech platform connecting students, counselors, and institutions. Built product-market fit in 6 months through disciplined user research and metrics-driven iteration.</p>
+        <div class="case-study-highlights">
+          <h4>Key Achievements</h4>
+          <ul class="highlights-list">
+            <li>Scaled platform to 50K+ active users across web, iOS, and Android</li>
+            <li>Onboarded 25+ institutional partners with 4,500+ users</li>
+            <li>Led end-to-end execution with 15+ person cross-functional team</li>
+            <li>Drove product discovery through 100+ user interviews with students, counselors, educators</li>
+            <li>Designed analytics framework informing all product roadmap decisions (May 2023 - July 2025)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="case-study">
+        <span class="case-study-badge">B2B SaaS · MarTech</span>
+        <h3 class="case-study-title">Promanage.biz (Sulekha.com)</h3>
+        <p class="company-tagline">AI-based MarTech SaaS platform that boosts discoverability of brick-and-mortar businesses through intelligent integrations.</p>
+        <p class="case-study-desc">Associate Product Manager. Designed REST API architecture enabling 8x faster integration velocity for brick-and-mortar business discovery platform. Shifted integration paradigm from manual to composable systems.</p>
+        <div class="case-study-highlights">
+          <h4>Key Achievements</h4>
+          <ul class="highlights-list">
+            <li>Built 8+ platform integrations (Facebook, MapMyIndia, Bing Maps) serving 10K+ business profiles</li>
+            <li>Developed REST API enabling faster third-party integrations</li>
+            <li>Created Google Business Profile change history system for automated data refresh</li>
+            <li>Increased conversion rate by 35% through improved onboarding and CMS-like workflows</li>
+            <li>Owned integration lifecycle management and API version updates (Aug 2022 - May 2023)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="case-study">
+        <span class="case-study-badge">Startup · 0 → 1 Ventures</span>
+        <h3 class="case-study-title">Doorvey &amp; Zepmat</h3>
+        <p class="company-tagline">Co-founded two ventures: Doorvey (B2C quick commerce) and Zepmat (SaaS for SMB digitalization).</p>
+        <p class="case-study-desc">Co-founder and product lead for two ventures during university. Shipped from concept to market, learning core systems thinking through hands-on execution in quick commerce and SMB SaaS domains.</p>
+        <div class="case-study-highlights">
+          <h4>Key Achievements</h4>
+          <ul class="highlights-list">
+            <li>Scaled Doorvey to 2,000+ monthly orders and grew to 20K+ transactions</li>
+            <li>Onboarded 40+ SMB customers for Zepmat SaaS platform</li>
+            <li>Built end-to-end product, GTM, operations, and team hiring</li>
+            <li>Learned core product fundamentals through direct customer interaction and feedback loops</li>
+            <li>Founded and shipped two working products from scratch (Nov 2019 - May 2022)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section class="projects-section" id="projects">
+      <div class="section-header">
+        <h2 class="section-title">Projects</h2>
+      </div>
+
+      <div class="project-card">
+        <h3 class="project-name">VerifAI</h3>
+        <p class="project-desc">AI-powered web application testing prototype. Automated testing and validation using intelligent AI systems to reduce QA cycles.</p>
+        <div style="margin-top: var(--space-m);">
+          <a href="https://verifai.smarttersstudio.in/" target="https://verifai.smarttersstudio.in/" class="btn primary" style="display: inline-block;">Experience Prototype</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Leadership Approach -->
+    <section class="approach" id="approach">
+      <div class="section-header">
+        <h2 class="section-title">How I Think About Products</h2>
+        <p class="section-subtitle">Principles that shape how I approach building and scaling software systems</p>
+      </div>
+      <div class="values-grid">
+        <div class="value-card">
+          <h3 class="value-title">Metrics-First Thinking</h3>
+          <p class="value-desc">Product decisions rooted in data, not intuition. Strong experimentation rigor through A/B testing and analytics design.</p>
+        </div>
+        <div class="value-card">
+          <h3 class="value-title">Deep User Understanding</h3>
+          <p class="value-desc">Direct research through interviews and observation. Understand user problems before designing solutions.</p>
+        </div>
+        <div class="value-card">
+          <h3 class="value-title">Cross-Functional Leadership</h3>
+          <p class="value-desc">Strong partnership with engineering, design, and business teams. Ownership of end-to-end execution and team scaling.</p>
+        </div>
+        <div class="value-card">
+          <h3 class="value-title">Systems Over Features</h3>
+          <p class="value-desc">Architecture-first mindset. Design for scale, composability, and coherence. Avoid building isolated features without architectural thought.</p>
+        </div>
+        <div class="value-card">
+          <h3 class="value-title">Disciplined Execution</h3>
+          <p class="value-desc">Move fast, ship ruthlessly, learn from users. High standards for shipping quality and attention to craft.</p>
+        </div>
+        <div class="value-card">
+          <h3 class="value-title">Technical Grounding</h3>
+          <p class="value-desc">Hands-on with tools and systems. Fluent in SQL, REST APIs, analytics platforms, product design tools, and development workflows.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Education -->
+    <section class="education" id="education">
+      <div class="section-header">
+        <h2 class="section-title">Education</h2>
+      </div>
+      <div class="education-card">
+        <div style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-m);">
+          <div>
+            <h3 style="margin: 0 0 var(--space-s) 0; font-size: 1.1rem; font-weight: 600;">Bachelor of Technology in Computer Science &amp; Engineering</h3>
+            <p style="margin: 0 0 var(--space-s) 0; color: var(--color-muted); font-size: 1rem;">KIIT University, Bhubaneswar</p>
+            <p style="margin: 0; color: var(--color-muted); font-size: 0.95rem;">Graduated 2021</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section class="contact" id="contact">
+      <div class="contact-block">
+        <h2 class="contact-title">Let's Build High-Impact Products</h2>
+        <p class="contact-desc">I'm open to discussing product strategy, AI integrations, platform architecture, or full-time opportunities that align with building exceptional products.</p>
+        <div class="contact-cta">
+          <a href="mailto:satyam@satyamnyk.com" class="btn btn-white primary">Email me</a>
+          <a href="https://linkedin.com/in/satyamnyk" target="https://linkedin.com/in/satyamnyk" class="btn btn-white">LinkedIn</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <p>© 2026 Satyam Nayak. Technical Product Manager | Platform Products · AI Systems · Scalable Solutions | Mumbai, India</p>
+    </div>
+  </footer>
+</body>
+</html>
