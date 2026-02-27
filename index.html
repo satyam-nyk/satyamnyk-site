@@ -40,7 +40,7 @@
       background: var(--color-bg);
       color: var(--color-text);
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      scroll-behavior: smooth;
+      scroll-behavior: auto;
     }
     
     *, *:before, *:after { box-sizing: inherit; }
@@ -212,33 +212,77 @@
     }
     
     .stat-card {
-      background: var(--color-bg);
+      background: #ffffff;
       border: 2px solid var(--color-border);
       border-radius: var(--radius-lg);
       padding: var(--space-m);
       text-align: center;
-      transition: var(--transition);
+      transition: all 0.3s ease;
       box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #2563eb, #1e40af);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:nth-child(1)::before {
+      background: linear-gradient(90deg, #2563eb, #1e40af);
+    }
+
+    .stat-card:nth-child(2)::before {
+      background: linear-gradient(90deg, #7c3aed, #6d28d9);
+    }
+
+    .stat-card:nth-child(3)::before {
+      background: linear-gradient(90deg, #059669, #047857);
+    }
+
+    .stat-card:nth-child(4)::before {
+      background: linear-gradient(90deg, #dc2626, #b91c1c);
+    }
+
+    .stat-card:nth-child(5)::before {
+      background: linear-gradient(90deg, #ea580c, #c2410c);
+    }
+
+    .stat-card:nth-child(6)::before {
+      background: linear-gradient(90deg, #2563eb, #7c3aed);
     }
     
     .stat-card:hover {
       border-color: var(--color-accent);
       box-shadow: var(--shadow);
       transform: translateY(-4px);
+      background: var(--color-bg-light);
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
     }
     
     .stat-value {
-      font-size: 2.2rem;
+      font-size: 2.4rem;
       font-weight: 700;
       color: var(--color-accent);
       margin: 0 0 var(--space-xs) 0;
+      letter-spacing: -0.02em;
     }
     
     .stat-label {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: var(--color-muted);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
       margin: 0;
       font-weight: 600;
     }
@@ -489,6 +533,24 @@
       box-shadow: var(--shadow);
       transform: translateY(-4px);
     }
+
+    .college-logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 80px;
+      height: 80px;
+      background: var(--color-bg-light);
+      border-radius: var(--radius);
+      padding: var(--space-s);
+    }
+
+    .college-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    };
+    }
     
     /* Contact Block */
     .contact-block {
@@ -601,6 +663,7 @@
       gap: var(--space-l);
       align-items: flex-start;
       margin-bottom: 5rem;
+      flex-direction: row-reverse;
     }
     
     .hero-content {
@@ -637,52 +700,201 @@
       height: 100%;
       object-fit: cover;
     }
+
+    /* Hamburger Menu */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      transition: all 0.3s ease;
+    }
+
+    .hamburger span {
+      width: 24px;
+      height: 2.5px;
+      background-color: var(--color-text);
+      border-radius: 2px;
+      transition: all 0.3s ease;
+      transform-origin: center;
+    }
+
+    .hamburger.active span:nth-child(1) {
+      transform: rotate(45deg) translate(10px, 10px);
+    }
+
+    .hamburger.active span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(8px, -8px);
+    }
+
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-m) var(--space-m);
+      flex-direction: column;
+      gap: var(--space-m);
+      z-index: 999;
+      animation: slideDown 0.3s ease;
+    }
+
+    .mobile-nav.active {
+      display: flex;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .mobile-nav a {
+      display: block;
+      padding: var(--space-s) 0;
+      color: var(--color-muted);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1rem;
+      border-bottom: 1px solid var(--color-border);
+      transition: var(--transition);
+    }
+
+    .mobile-nav a:last-child {
+      border-bottom: none;
+    }
+
+    .mobile-nav a:hover {
+      color: var(--color-accent);
+      padding-left: var(--space-s);
+    }
     
     @media (max-width: 768px) {
+      .hamburger {
+        display: flex;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
       .hero-container {
         flex-direction: column;
-        align-items: center;
         gap: var(--space-m);
       }
       
+      .hero-image-container {
+        flex: 0 0 120px;
+        align-items: center;
+        width: auto;
+      }
+
       .hero-image {
-        width: 150px;
-        height: 150px;
+        width: 120px;
+        height: 120px;
       }
       
-      .nav-links {
-        gap: var(--space-s);
-      }
-      
-      .nav-links a {
-        font-size: 0.9rem;
-      }
-      
-      .hero-name { font-size: 2rem; }
+      .hero-name { font-size: 2.2rem; }
+      .hero-tagline { font-size: 1rem; }
+      .section-title { font-size: 1.6rem; }
       .impact-stats { grid-template-columns: repeat(2, 1fr); }
+      .expertise-grid { grid-template-columns: repeat(2, 1fr); }
+      .case-study { padding: var(--space-l); }
     }
     
     @media (max-width: 600px) {
       html { font-size: 16px; }
-      main { padding: 2rem var(--space-s); }
-      .hero-name { font-size: 2rem; }
-      .section-title { font-size: 1.4rem; }
-      .impact-stats { grid-template-columns: 1fr; }
-      .expertise-grid { grid-template-columns: 1fr; }
-      .case-study { padding: var(--space-m); }
-      .contact-cta { flex-direction: column; }
-      .btn { width: 100%; text-align: center; }
-      .nav-links {
-        gap: var(--space-xs);
-        font-size: 0.85rem;
+      main { padding: 2rem 1rem 3rem 1rem; }
+      nav { padding: var(--space-s) 1rem; }
+      .nav-logo { font-size: 1rem; font-weight: 700; }
+      
+      .hero-container {
+        flex-direction: column;
+        gap: var(--space-m);
       }
+
+      .hero-image-container {
+        flex: 0 0 100px;
+        align-items: center;
+        width: auto;
+      }
+      
+      .hero-image {
+        width: 100px;
+        height: 100px;
+      }
+
+      .hero-name { font-size: 1.8rem; margin-bottom: var(--space-xs); }
+      .hero-role { font-size: 1.2rem; margin-bottom: var(--space-s); }
+      .hero-tagline { font-size: 0.95rem; line-height: 1.6; margin-bottom: var(--space-l); }
+      .hero-subtext { gap: var(--space-s); margin-bottom: var(--space-l); }
+      .hero-subtext span { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+      .hero-cta { gap: var(--space-s); }
+      
+      .section-title { font-size: 1.3rem; margin-bottom: var(--space-s); }
+      .section-subtitle { font-size: 0.9rem; margin-bottom: var(--space-m); }
+      .impact-stats { grid-template-columns: 1fr; gap: var(--space-s); }
+      .stat-card { padding: var(--space-m); }
+      .stat-value { font-size: 1.8rem; }
+      .stat-label { font-size: 0.85rem; }
+      .college-logo-container { flex: 0 0 60px; height: 60px; }
+      .expertise-grid { grid-template-columns: 1fr; }
+      .expertise-card { padding: var(--space-s); }
+      .case-study { padding: var(--space-m); margin-bottom: var(--space-m); }
+      .case-study-title { font-size: 1.2rem; }
+      .case-study-highlights h4 { font-size: 1rem; }
+      .highlights-list { margin: var(--space-s) 0; padding-left: var(--space-m); }
+      .highlights-list li { font-size: 0.95rem; margin-bottom: var(--space-xs); }
+      .contact-cta { flex-direction: column; }
+      .btn { width: 100%; text-align: center; padding: 0.75rem 1.5rem; }
+      .footer-content { font-size: 0.85rem; }
     }
     
     @media (max-width: 480px) {
-      .hero-name { font-size: 2rem; }
-      .hero-subtext { gap: var(--space-s); }
-      .impact-stats { grid-template-columns: 1fr; }
-      main { padding: 1.5rem var(--space-xs); }
+      main { padding: 2rem 1rem 3rem 1rem; }
+      .hero-name { font-size: 1.6rem; }
+      .hero-role { font-size: 1.1rem; }
+      .hero-tagline { font-size: 0.9rem; }
+      .hero-container { gap: var(--space-s); }
+      .hero-content { gap: var(--space-s); }
+      .hero-subtext { gap: var(--space-xs); }
+      .hero-subtext span { font-size: 0.8rem; padding: 0.35rem 0.7rem; }
+      .hero-image { width: 120px; height: 120px; }
+      .section-title { font-size: 1.2rem; }
+      .section-subtitle { font-size: 0.85rem; }
+      .impact-stats { grid-template-columns: 1fr; gap: var(--space-s); }
+      .stat-card { padding: 1rem; }
+      .stat-value { font-size: 1.6rem; }
+      .stat-label { font-size: 0.8rem; }
+      .expertise-icon { font-size: 1.8rem; margin-bottom: var(--space-xs); }
+      .expertise-title { font-size: 1rem; }
+      .expertise-desc { font-size: 0.9rem; }
+      .case-study { padding: var(--space-m); }
+      .case-study-badge { font-size: 0.75rem; padding: 0.3rem 0.7rem; }
+      .case-study-title { font-size: 1.1rem; }
+      .case-study-desc { font-size: 0.95rem; }
+      .highlights-list li { font-size: 0.9rem; }
+      .btn { padding: 0.65rem 1rem; font-size: 0.95rem; }
+      .nav-container { padding: 1rem 0.5rem; }
+      .nav-logo { font-size: 1rem; }
+      .nav-links a { font-size: 0.75rem; padding: 0.4rem 0.5rem; }
+      .footer-content { font-size: 0.8rem; }
     }
   </style>
 </head>
@@ -699,13 +911,33 @@
         <li><a href="#education">Education</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
+      <button class="hamburger" id="hamburger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
     </div>
   </nav>
+
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#impact">Impact</a>
+    <a href="#expertise">Skills</a>
+    <a href="#work">Work</a>
+    <a href="#projects">Projects</a>
+    <a href="#education">Education</a>
+    <a href="#contact">Contact</a>
+  </div>
 
   <main>
     <!-- Hero Section -->
     <section class="hero" id="hero">
       <div class="hero-container">
+        <div class="hero-image-container">
+          <div class="hero-image" id="pictureContainer">
+            <img src="./assets/profile.png" alt="Satyam Nayak" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+        </div>
+
         <div class="hero-content">
           <h1 class="hero-name">Satyam Nayak</h1>
           <div class="hero-role">Technical Product Manager</div>
@@ -722,12 +954,6 @@
             <a href="#impact" class="btn primary">View Impact</a>
             <a href="#work" class="btn">Case Studies</a>
             <a href="mailto:satyam@satyamnyk.com" class="btn">Email</a>
-          </div>
-        </div>
-        
-        <div class="hero-image-container">
-          <div class="hero-image" id="pictureContainer">
-            <img src="./assets/profile.png" alt="Satyam Nayak" style="width: 100%; height: 100%; object-fit: cover;">
           </div>
         </div>
       </div>
@@ -763,18 +989,6 @@
         <div class="stat-card">
           <div class="stat-value">35%</div>
           <div class="stat-label">Conversion Uplift</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">25+</div>
-          <div class="stat-label">Institutional Partners</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">20K+</div>
-          <div class="stat-label">Startup Transactions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">5K+</div>
-          <div class="stat-label">Residents Served</div>
         </div>
       </div>
     </section>
@@ -951,10 +1165,13 @@
       </div>
       <div class="education-card">
         <div style="display: flex; justify-content: space-between; align-items: start; gap: var(--space-m);">
-          <div>
+          <div style="flex: 1;">
             <h3 style="margin: 0 0 var(--space-s) 0; font-size: 1.1rem; font-weight: 600;">Bachelor of Technology in Computer Science &amp; Engineering</h3>
             <p style="margin: 0 0 var(--space-s) 0; color: var(--color-muted); font-size: 1rem;">KIIT University, Bhubaneswar</p>
             <p style="margin: 0; color: var(--color-muted); font-size: 0.95rem;">Graduated 2021</p>
+          </div>
+          <div class="college-logo-container">
+            <img src="./assets/college-logo.png" alt="KIIT University Logo" class="college-logo">
           </div>
         </div>
       </div>
@@ -978,5 +1195,23 @@
       <p>© 2026 Satyam Nayak. Technical Product Manager | Platform Products · AI Systems · Scalable Solutions | Mumbai, India</p>
     </div>
   </footer>
+
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const mobileNav = document.getElementById('mobileNav');
+
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('active');
+      mobileNav.classList.toggle('active');
+    });
+
+    // Close menu when a link is clicked
+    document.querySelectorAll('.mobile-nav a').forEach(link => {
+      link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        mobileNav.classList.remove('active');
+      });
+    });
+  </script>
 </body>
 </html>
