@@ -86,23 +86,8 @@
       gap: var(--space-m);
       margin-bottom: 6rem;
       align-items: flex-start;
-      position: relative;
-      overflow: hidden;
     }
     
-    .hero-background {
-      position: absolute;
-      top: 0;
-      left: 0;
-      display: block;
-      z-index: 0;
-      opacity: 0.15;
-    }
-    
-    .hero-container {
-      position: relative;
-      z-index: 1;
-    }
     .hero-name {
       font-size: 3.5rem;
       font-weight: 700;
@@ -219,24 +204,7 @@
     }
     
     /* Impact Stats */
-    .impact {
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .impact canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 0;
-      opacity: 0.1;
-    }
-    
-    .impact .section-header,
-    .impact .impact-stats {
-      position: relative;
-      z-index: 1;
-    }
+    .impact-stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: var(--space-m);
@@ -254,11 +222,52 @@
       position: relative;
     }
 
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #2563eb, #1e40af);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:nth-child(1)::before {
+      background: linear-gradient(90deg, #2563eb, #1e40af);
+    }
+
+    .stat-card:nth-child(2)::before {
+      background: linear-gradient(90deg, #7c3aed, #6d28d9);
+    }
+
+    .stat-card:nth-child(3)::before {
+      background: linear-gradient(90deg, #059669, #047857);
+    }
+
+    .stat-card:nth-child(4)::before {
+      background: linear-gradient(90deg, #dc2626, #b91c1c);
+    }
+
+    .stat-card:nth-child(5)::before {
+      background: linear-gradient(90deg, #ea580c, #c2410c);
+    }
+
+    .stat-card:nth-child(6)::before {
+      background: linear-gradient(90deg, #2563eb, #7c3aed);
+    }
+    
     .stat-card:hover {
       border-color: var(--color-accent);
       box-shadow: var(--shadow);
       transform: translateY(-4px);
       background: var(--color-bg-light);
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
     }
     
     .stat-value {
@@ -443,51 +452,11 @@
     }
     
     /* Projects Section */
-    /* Product Lab */
-    .projects-section {
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .projects-section canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 0;
-      opacity: 0.08;
-    }
-    
-    .projects-section .section-header,
-    .projects-section .project-card {
-      position: relative;
-      z-index: 1;
-    }
-    
-    /* Work Section */
-    .work {
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .work canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 0;
-      opacity: 0.08;
-    }
-    
-    .work .section-header,
-    .work .case-study {
-      position: relative;
-      z-index: 1;
-    }
-    
     .projects-section {
       margin-top: var(--space-xl);
     }
     
-    .projects-section canvas {
+    .project-card {
       background: var(--color-bg);
       border: 2px solid var(--color-border);
       border-radius: var(--radius-lg);
@@ -981,7 +950,6 @@
   <main>
     <!-- Hero Section -->
     <section class="hero" id="hero">
-      <canvas class="section-bg-canvas" id="heroCanvas" data-nodes="30" data-distance="200"></canvas>
       <div class="hero-container">
         <div class="hero-image-container">
           <div class="hero-image" id="pictureContainer">
@@ -1012,7 +980,6 @@
 
     <!-- Impact Stats -->
     <section class="impact" id="impact">
-      <canvas class="section-bg-canvas" data-nodes="25" data-distance="180"></canvas>
       <div class="section-header">
         <h2 class="section-title">Measurable Impact</h2>
         <p class="section-subtitle">Results driven by strategy, execution, and user-centric design</p>
@@ -1045,45 +1012,48 @@
       </div>
     </section>
 
-    <!-- Product Lab -->
-    <section class="projects-section" id="projects">
-      <canvas class="section-bg-canvas" data-nodes="20" data-distance="160"></canvas>
+    <!-- Core Expertise -->
+    <section class="expertise-section" id="expertise">
       <div class="section-header">
-        <h2 class="section-title">Product Lab</h2>
-        <p class="section-subtitle">Systems and products I've built across AI, platforms, and marketplaces</p>
+        <h2 class="section-title">Core Expertise</h2>
+        <p class="section-subtitle">Skills & technologies that drive product success</p>
       </div>
-
-      <div class="project-card">
-        <div class="project-icon">🤖</div>
-        <h3 class="project-name">AI Voice Agent for Lead Qualification</h3>
-        <p class="project-desc">Designed and deployed an AI voice agent capable of handling inbound property inquiries, answering common questions, qualifying leads, and routing high-intent prospects to sales teams. The system currently handles 10K+ monthly calls and reduces manual sales workload.</p>
-      </div>
-
-      <div class="project-card">
-        <div class="project-icon">🎓</div>
-        <h3 class="project-name">College Admission Intelligence System</h3>
-        <p class="project-desc">Built a predictive system mapping entrance exam ranks, board scores, and historical college cutoffs to recommend realistic admission options for students. This system powers the college shortlisting workflow for the Education Match counseling platform.</p>
-      </div>
-
-      <div class="project-card">
-        <div class="project-icon">🏢</div>
-        <h3 class="project-name">VR Property Explorer</h3>
-        <p class="project-desc">Developed an immersive property discovery experience allowing buyers to explore apartments, amenities, and surrounding areas through interactive 3D visualization and VR environments.</p>
-      </div>
-
-      <div class="project-card">
-        <div class="project-icon">⚡</div>
-        <h3 class="project-name">VerifAI</h3>
-        <p class="project-desc">Prototype tool exploring AI-driven automated web application testing and validation to reduce QA cycles and accelerate development workflows.</p>
-        <div style="margin-top: var(--space-m);">
-          <a href="https://verifai.smarttersstudio.in/" target="_blank" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-accent); text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">Experience Prototype <span style="font-size: 1.2rem;">→</span></a>
+      <div class="expertise-grid">
+        <div class="expertise-card">
+          <div class="expertise-icon">🏗️</div>
+          <h3 class="expertise-title">Platform Architecture</h3>
+          <p class="expertise-desc">Design and scale multi-tenant systems from zero. Cross-platform coordination (Web, iOS, Android) with focus on architectural decisions that enable growth.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">🤖</div>
+          <h3 class="expertise-title">AI & LLM Integration</h3>
+          <p class="expertise-desc">Shipped AI calling systems handling 10K+ calls monthly. Strategic LLM integration for product experiences and automating workflows.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">📊</div>
+          <h3 class="expertise-title">Analytics &amp; Metrics</h3>
+          <p class="expertise-desc">Analytics and experimentation frameworks using Mixpanel, GA4, SQL. Metrics design that informs roadmap and strategy decisions.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">🚀</div>
+          <h3 class="expertise-title">Growth Systems</h3>
+          <p class="expertise-desc">Built systems for wallet ($2M+ TPV), referral programs (30% acquisition), and monetization. Focus on sustainable growth mechanics.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">🔗</div>
+          <h3 class="expertise-title">API &amp; Integrations</h3>
+          <p class="expertise-desc">Designed and shipped 8+ third-party integrations (Facebook, Bing Maps, MapMyIndia). REST APIs enabling 8x faster integration velocity.</p>
+        </div>
+        <div class="expertise-card">
+          <div class="expertise-icon">🎯</div>
+          <h3 class="expertise-title">Product Discovery</h3>
+          <p class="expertise-desc">User interviews and market validation. Conducted 100+ discovery conversations with students, counselors, educators, and residents.</p>
         </div>
       </div>
     </section>
 
     <!-- Work Experience -->
     <section class="work" id="work">
-      <canvas class="section-bg-canvas" data-nodes="22" data-distance="170"></canvas>
       <div class="section-header">
         <h2 class="section-title">Work Experience</h2>
         <p class="section-subtitle">Strategic initiatives that created measurable business outcomes</p>
@@ -1158,42 +1128,37 @@
       </div>
     </section>
 
-    <!-- Core Expertise -->
-    <section class="expertise-section" id="expertise">
+    <!-- Product Lab -->
+    <section class="projects-section" id="projects">
       <div class="section-header">
-        <h2 class="section-title">Core Expertise</h2>
-        <p class="section-subtitle">Skills & technologies that drive product success</p>
+        <h2 class="section-title">Product Lab</h2>
+        <p class="section-subtitle">Systems and products I've built across AI, platforms, and marketplaces</p>
       </div>
-      <div class="expertise-grid">
-        <div class="expertise-card">
-          <div class="expertise-icon">🏗️</div>
-          <h3 class="expertise-title">Platform Architecture</h3>
-          <p class="expertise-desc">Design and scale multi-tenant systems from zero. Cross-platform coordination (Web, iOS, Android) with focus on architectural decisions that enable growth.</p>
-        </div>
-        <div class="expertise-card">
-          <div class="expertise-icon">🤖</div>
-          <h3 class="expertise-title">AI & LLM Integration</h3>
-          <p class="expertise-desc">Shipped AI calling systems handling 10K+ calls monthly. Strategic LLM integration for product experiences and automating workflows.</p>
-        </div>
-        <div class="expertise-card">
-          <div class="expertise-icon">📊</div>
-          <h3 class="expertise-title">Analytics &amp; Metrics</h3>
-          <p class="expertise-desc">Analytics and experimentation frameworks using Mixpanel, GA4, SQL. Metrics design that informs roadmap and strategy decisions.</p>
-        </div>
-        <div class="expertise-card">
-          <div class="expertise-icon">🚀</div>
-          <h3 class="expertise-title">Growth Systems</h3>
-          <p class="expertise-desc">Built systems for wallet ($2M+ TPV), referral programs (30% acquisition), and monetization. Focus on sustainable growth mechanics.</p>
-        </div>
-        <div class="expertise-card">
-          <div class="expertise-icon">🔗</div>
-          <h3 class="expertise-title">API &amp; Integrations</h3>
-          <p class="expertise-desc">Designed and shipped 8+ third-party integrations (Facebook, Bing Maps, MapMyIndia). REST APIs enabling 8x faster integration velocity.</p>
-        </div>
-        <div class="expertise-card">
-          <div class="expertise-icon">🎯</div>
-          <h3 class="expertise-title">Product Discovery</h3>
-          <p class="expertise-desc">User interviews and market validation. Conducted 100+ discovery conversations with students, counselors, educators, and residents.</p>
+
+      <div class="project-card">
+        <div class="project-icon">🤖</div>
+        <h3 class="project-name">AI Voice Agent for Lead Qualification</h3>
+        <p class="project-desc">Designed and deployed an AI voice agent capable of handling inbound property inquiries, answering common questions, qualifying leads, and routing high-intent prospects to sales teams. The system currently handles 10K+ monthly calls and reduces manual sales workload.</p>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">🎓</div>
+        <h3 class="project-name">College Admission Intelligence System</h3>
+        <p class="project-desc">Built a predictive system mapping entrance exam ranks, board scores, and historical college cutoffs to recommend realistic admission options for students. This system powers the college shortlisting workflow for the Education Match counseling platform.</p>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">🏢</div>
+        <h3 class="project-name">VR Property Explorer</h3>
+        <p class="project-desc">Developed an immersive property discovery experience allowing buyers to explore apartments, amenities, and surrounding areas through interactive 3D visualization and VR environments.</p>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">⚡</div>
+        <h3 class="project-name">VerifAI</h3>
+        <p class="project-desc">Prototype tool exploring AI-driven automated web application testing and validation to reduce QA cycles and accelerate development workflows.</p>
+        <div style="margin-top: var(--space-m);">
+          <a href="https://verifai.smarttersstudio.in/" target="_blank" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-accent); text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">Experience Prototype <span style="font-size: 1.2rem;">→</span></a>
         </div>
       </div>
     </section>
@@ -1271,104 +1236,6 @@
   </footer>
 
   <script>
-    // Network animation function for all sections
-    function initNetworkCanvas(canvas) {
-      const ctx = canvas.getContext('2d');
-      let animationFrameId;
-      const nodeCount = parseInt(canvas.dataset.nodes) || 20;
-      const connectionDistance = parseInt(canvas.dataset.distance) || 180;
-      
-      function resizeCanvas() {
-        const section = canvas.closest('section') || canvas.parentElement;
-        const rect = section.getBoundingClientRect();
-        canvas.width = window.innerWidth;
-        canvas.height = rect.height || 400;
-        canvas.style.width = '100%';
-        canvas.style.height = canvas.height + 'px';
-      }
-      
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', resizeCanvas);
-      } else {
-        setTimeout(resizeCanvas, 100);
-      }
-      window.addEventListener('resize', resizeCanvas);
-      
-      class Node {
-        constructor() {
-          this.x = Math.random() * canvas.width;
-          this.y = Math.random() * canvas.height;
-          this.vx = (Math.random() - 0.5) * 0.2;
-          this.vy = (Math.random() - 0.5) * 0.2;
-          this.radius = Math.random() * 1.2 + 0.6;
-          this.pulsePhase = Math.random() * Math.PI * 2;
-          this.pulseSpeed = Math.random() * 0.015 + 0.008;
-        }
-        
-        update() {
-          this.x += this.vx;
-          this.y += this.vy;
-          this.pulsePhase += this.pulseSpeed;
-          
-          if (this.x < 0) this.x = canvas.width;
-          if (this.x > canvas.width) this.x = 0;
-          if (this.y < 0) this.y = canvas.height;
-          if (this.y > canvas.height) this.y = 0;
-        }
-        
-        draw() {
-          const pulseRadius = this.radius * (1 + Math.sin(this.pulsePhase) * 0.25);
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, pulseRadius, 0, Math.PI * 2);
-          ctx.fillStyle = '#9ca3af';
-          ctx.fill();
-        }
-      }
-      
-      const nodes = [];
-      for (let i = 0; i < nodeCount; i++) {
-        nodes.push(new Node());
-      }
-      
-      function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        nodes.forEach(node => {
-          node.update();
-          node.draw();
-        });
-        
-        ctx.strokeStyle = '#d1d5db';
-        ctx.lineWidth = 0.8;
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i + 1; j < nodes.length; j++) {
-            const dx = nodes[i].x - nodes[j].x;
-            const dy = nodes[i].y - nodes[j].y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < connectionDistance) {
-              const opacity = (1 - distance / connectionDistance) * 0.4;
-              ctx.globalAlpha = opacity;
-              ctx.beginPath();
-              ctx.moveTo(nodes[i].x, nodes[i].y);
-              ctx.lineTo(nodes[j].x, nodes[j].y);
-              ctx.stroke();
-              ctx.globalAlpha = 1;
-            }
-          }
-        }
-        
-        animationFrameId = requestAnimationFrame(animate);
-      }
-      
-      animate();
-    }
-    
-    // Initialize all network canvases
-    document.querySelectorAll('.section-bg-canvas').forEach(canvas => {
-      initNetworkCanvas(canvas);
-    });
-    
     const hamburger = document.getElementById('hamburger');
     const mobileNav = document.getElementById('mobileNav');
 
