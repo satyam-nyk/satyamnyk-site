@@ -463,12 +463,22 @@
       padding: var(--space-m);
       transition: var(--transition);
       box-shadow: var(--shadow-sm);
+      margin-bottom: var(--space-l);
+    }
+    
+    .project-card:last-child {
+      margin-bottom: 0;
     }
     
     .project-card:hover {
       border-color: var(--color-accent);
       box-shadow: var(--shadow);
       transform: translateY(-4px);
+    }
+    
+    .project-icon {
+      font-size: 2rem;
+      margin-bottom: var(--space-s);
     }
     
     .project-name {
@@ -1118,17 +1128,37 @@
       </div>
     </section>
 
-    <!-- Projects -->
+    <!-- Product Lab -->
     <section class="projects-section" id="projects">
       <div class="section-header">
-        <h2 class="section-title">Projects</h2>
+        <h2 class="section-title">Product Lab</h2>
+        <p class="section-subtitle">Systems and products I've built across AI, platforms, and marketplaces</p>
       </div>
 
       <div class="project-card">
+        <div class="project-icon">🤖</div>
+        <h3 class="project-name">AI Voice Agent for Lead Qualification</h3>
+        <p class="project-desc">Designed and deployed an AI voice agent capable of handling inbound property inquiries, answering common questions, qualifying leads, and routing high-intent prospects to sales teams. The system currently handles 10K+ monthly calls and reduces manual sales workload.</p>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">🎓</div>
+        <h3 class="project-name">College Admission Intelligence System</h3>
+        <p class="project-desc">Built a predictive system mapping entrance exam ranks, board scores, and historical college cutoffs to recommend realistic admission options for students. This system powers the college shortlisting workflow for the Education Match counseling platform.</p>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">🏢</div>
+        <h3 class="project-name">VR Property Explorer</h3>
+        <p class="project-desc">Developed an immersive property discovery experience allowing buyers to explore apartments, amenities, and surrounding areas through interactive 3D visualization and VR environments.</p>
+      </div>
+
+      <div class="project-card">
+        <div class="project-icon">⚡</div>
         <h3 class="project-name">VerifAI</h3>
-        <p class="project-desc">AI-powered web application testing prototype. Automated testing and validation using intelligent AI systems to reduce QA cycles.</p>
+        <p class="project-desc">Prototype tool exploring AI-driven automated web application testing and validation to reduce QA cycles and accelerate development workflows.</p>
         <div style="margin-top: var(--space-m);">
-          <a href="https://verifai.smarttersstudio.in/" target="https://verifai.smarttersstudio.in/" class="btn primary" style="display: inline-block;">Experience Prototype</a>
+          <a href="https://verifai.smarttersstudio.in/" target="_blank" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-accent); text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">Experience Prototype <span style="font-size: 1.2rem;">→</span></a>
         </div>
       </div>
     </section>
