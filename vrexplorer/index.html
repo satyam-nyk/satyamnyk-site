@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR Property Explorer | Immersive Real Estate Discovery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <a href="../index.html" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: inherit;">
+                    <span style="font-weight: 700; color: #14b8a6;">VR</span>
+                    <span style="font-weight: 400; color: #8b9dc3;">Explorer</span>
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#demo" class="nav-link">Demo</a>
+                <a href="#architecture" class="nav-link">Architecture</a>
+                <a href="../index.html" class="nav-link">Back to Portfolio</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-glow"></div>
+            <h1 class="hero-title">Explore Properties Before You Visit</h1>
+            <p class="hero-subtitle">
+                An immersive property discovery platform that lets buyers walk through apartments, 
+                amenities, and neighborhoods using interactive 3D visualization and VR environments.
+            </p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" onclick="scrollToSection('#demo')">See VR Demo</button>
+                <button class="btn btn-secondary" onclick="scrollToSection('#pipeline')">How It Works</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problems Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Property Discovery is Still Static</h2>
+            <div class="problems-grid">
+                <div class="problem-card">
+                    <div class="card-icon">📸</div>
+                    <h3>Photos Don't Capture Layout</h3>
+                    <p>2D photos fail to convey spatial dimensions, lighting, and flow between spaces. Buyers miss critical details about proportions and functionality.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="card-icon">🚗</div>
+                    <h3>Too Many Property Visits</h3>
+                    <p>Buyers waste hours visiting unsuitable properties. Without spatial understanding upfront, they can't filter efficiently and qualify properties faster.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="card-icon">🏘️</div>
+                    <h3>Lack of Neighborhood Context</h3>
+                    <p>Buyers don't understand surrounding amenities, transport links, and neighborhood characteristics without physically visiting the area.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="card-icon">⏱️</div>
+                    <h3>Time-Consuming Site Visits</h3>
+                    <p>Property tours take 30-60 minutes each. A single weekend can only cover 2-4 properties, severely limiting buyer choice and discovery.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Immersive Property Exploration</h2>
+            <p style="text-align: center; color: #8b9dc3; margin-bottom: 3rem; max-width: 700px; margin-left: auto; margin-right: auto;">
+                Our platform enables buyers to explore every aspect of properties digitally, making informed decisions before visiting.
+            </p>
+            <div class="solution-grid">
+                <div class="solution-card">
+                    <div class="solution-icon">🏠</div>
+                    <h3>Apartments in 3D</h3>
+                    <p>Fully rendered 3D models of living spaces with accurate proportions, lighting, and spatial relationships. Navigate rooms seamlessly.</p>
+                </div>
+                <div class="solution-card">
+                    <div class="solution-icon">🏊</div>
+                    <h3>Amenities & Facilities</h3>
+                    <p>Explore pools, gyms, gardens, and community spaces in immersive 3D. Understand amenity locations relative to your unit.</p>
+                </div>
+                <div class="solution-card">
+                    <div class="solution-icon">🗺️</div>
+                    <h3>Neighborhood Surroundings</h3>
+                    <p>VR walkthrough of nearby areas showing schools, hospitals, restaurants, transport, and local amenities within walking distance.</p>
+                </div>
+                <div class="solution-card">
+                    <div class="solution-icon">🛋️</div>
+                    <h3>Furnishing Layouts</h3>
+                    <p>See how furniture fits in realistic placements. Understand spatial flow and visualize your own furniture within the space.</p>
+                </div>
+                <div class="solution-card">
+                    <div class="solution-icon">🏗️</div>
+                    <h3>Building Structure</h3>
+                    <p>Explore structural layouts, stairwells, parking areas, and service rooms. Complete understanding of the entire property ecosystem.</p>
+                </div>
+                <div class="solution-card">
+                    <div class="solution-icon">🔍</div>
+                    <h3>Interactive Discovery</h3>
+                    <p>Click, explore, measure, and annotate. Mark favorite spots, take notes, and compare multiple properties side-by-side in VR.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3D Exploration Pipeline -->
+    <section class="section" id="pipeline">
+        <div class="container">
+            <h2 class="section-title">3D Exploration Pipeline</h2>
+            <div class="pipeline">
+                <div class="pipeline-step">
+                    <div class="pipeline-number">1</div>
+                    <h3>Property Data</h3>
+                    <p>Collect property specifications, layouts, and architectural plans</p>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="pipeline-number">2</div>
+                    <h3>3D Model Generation</h3>
+                    <p>AI-powered conversion of plans to photorealistic 3D models</p>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="pipeline-number">3</div>
+                    <h3>Interactive Viewer</h3>
+                    <p>Web-based 3D viewer with smooth navigation and interactions</p>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="pipeline-number">4</div>
+                    <h3>VR Walkthrough</h3>
+                    <p>Enable immersive VR experiences with spatial audio</p>
+                </div>
+                <div class="pipeline-connector"></div>
+                <div class="pipeline-step">
+                    <div class="pipeline-number">5</div>
+                    <h3>Buyer Exploration</h3>
+                    <p>Buyers discover, explore, and make purchase decisions digitally</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Apartment Viewer -->
+    <section class="section" id="demo">
+        <div class="container">
+            <h2 class="section-title">Interactive Apartment Viewer</h2>
+            <div class="viewer-container">
+                <div class="viewer-window">
+                    <div class="viewer-display">
+                        <div id="viewerContent" class="viewer-content">
+                            <div class="room-indicator">Living Room</div>
+                            <div class="room-visualization">
+                                360° panoramic space with natural lighting and balcony access
+                            </div>
+                        </div>
+                    </div>
+                    <div class="viewer-controls">
+                        <button class="room-button active" onclick="switchRoom('Living Room', this)">Living Room</button>
+                        <button class="room-button" onclick="switchRoom('Kitchen', this)">Kitchen</button>
+                        <button class="room-button" onclick="switchRoom('Bedroom', this)">Bedroom</button>
+                        <button class="room-button" onclick="switchRoom('Balcony', this)">Balcony</button>
+                        <button class="room-button" onclick="switchRoom('Amenities', this)">Amenities</button>
+                    </div>
+                </div>
+
+                <div class="room-details">
+                    <h3>Living Room</h3>
+                    <ul id="roomInfo">
+                        <li>360° panoramic space with natural lighting</li>
+                        <li>East-facing balcony with city views</li>
+                        <li>Dimensions: 18ft × 22ft</li>
+                        <li>Premium marble flooring</li>
+                        <li>Full-wall glass partition to balcony</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VR Walkthrough Demo -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">VR Walkthrough Navigation</h2>
+            <div class="vr-demo-container">
+                <div class="vr-viewer">
+                    <div class="vr-status">VR Mode: Active</div>
+                    <div class="vr-display">
+                        <div id="vrRoomIndicator" class="vr-room">You are exploring: Living Room</div>
+                    </div>
+                </div>
+                <div class="vr-navigation">
+                    <h3>Room Navigation</h3>
+                    <div class="vr-rooms">
+                        <button class="vr-room-btn active" onclick="switchVRRoom('Living Room', this)">🏠 Living Room</button>
+                        <button class="vr-room-btn" onclick="switchVRRoom('Kitchen', this)">🍳 Kitchen</button>
+                        <button class="vr-room-btn" onclick="switchVRRoom('Bedroom', this)">🛏️ Bedroom</button>
+                        <button class="vr-room-btn" onclick="switchVRRoom('Balcony', this)">🌳 Balcony</button>
+                        <button class="vr-room-btn" onclick="switchVRRoom('Amenities', this)">🏊 Amenities</button>
+                    </div>
+                    <p style="margin-top: 1.5rem; color: #8b9dc3; font-size: 0.9rem;">
+                        Click rooms to traverse the virtual property. In real VR mode, use headset controllers for seamless navigation.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section" id="features">
+        <div class="container">
+            <h2 class="section-title">Powerful Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>3D Apartment Models</h3>
+                    <p>Photorealistic 3D models rendered with advanced lighting, materials, and real-time environmental reflections for maximum immersion.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🥽</div>
+                    <h3>VR Walkthrough Mode</h3>
+                    <p>Complete immersive experience with VR headset support. Navigate properties in full 360° with spatial audio cues.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏊</div>
+                    <h3>Amenity Exploration</h3>
+                    <p>Browse gyms, pools, gardens, lounges, and community spaces. Understand amenity quality and proximity to your potential unit.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🗺️</div>
+                    <h3>Neighborhood Mapping</h3>
+                    <p>Explore surrounding areas including schools, hospitals, restaurants, grocery stores, and transport options in immersive VR.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛋️</div>
+                    <h3>Furniture Layout Simulation</h3>
+                    <p>Preview different furniture arrangements in realistic scale. Test furniture placement before purchasing or moving day.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Detailed Analytics</h3>
+                    <p>Real-time property insights - area analysis, price comparisons, amenity scores, and neighborhood metrics in one dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Metrics Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Driving Property Discovery</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-number">500+</div>
+                    <div class="metric-label">Apartments Modeled</div>
+                    <p style="margin-top: 0.5rem; color: #8b9dc3; font-size: 0.9rem;">Across premium projects nationwide</p>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">20+</div>
+                    <div class="metric-label">Property Projects Digitized</div>
+                    <p style="margin-top: 0.5rem; color: #8b9dc3; font-size: 0.9rem;">From luxury to mainstream segments</p>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">5+</div>
+                    <div class="metric-label">Cities Supported</div>
+                    <p style="margin-top: 0.5rem; color: #8b9dc3; font-size: 0.9rem;">Covering major metropolitan areas</p>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">3x</div>
+                    <div class="metric-label">Faster Property Discovery</div>
+                    <p style="margin-top: 0.5rem; color: #8b9dc3; font-size: 0.9rem;">vs. traditional property visits</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="section" id="architecture">
+        <div class="container">
+            <h2 class="section-title">System Architecture</h2>
+            <div class="architecture-diagram">
+                <div class="arch-layer">
+                    <div class="arch-icon">📊</div>
+                    <div class="arch-label">Property Data Layer</div>
+                    <p>Specifications, plans, metadata</p>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-layer">
+                    <div class="arch-icon">🤖</div>
+                    <div class="arch-label">3D Modeling Engine</div>
+                    <p>AI model conversion & generation</p>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-layer">
+                    <div class="arch-icon">🎮</div>
+                    <div class="arch-label">VR Rendering Engine</div>
+                    <p>WebGL, Three.js, Babylon.js</p>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-layer">
+                    <div class="arch-icon">🖱️</div>
+                    <div class="arch-label">Interactive Viewer</div>
+                    <p>Navigation, annotations, interactions</p>
+                </div>
+                <div class="arch-arrow">↓</div>
+                <div class="arch-layer">
+                    <div class="arch-icon">👥</div>
+                    <div class="arch-label">Buyer Interface</div>
+                    <p>Web, mobile, and VR headset clients</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#demo">Try Demo</a></li>
+                        <li><a href="#architecture">Architecture</a></li>
+                        <li><a href="#">Pricing</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Projects</h4>
+                    <ul>
+                        <li><a href="../index.html">My Portfolio</a></li>
+                        <li><a href="../ai-voice-agent/index.html">Lead Agent</a></li>
+                        <li><a href="../college-predictor/index.html">College Predictor</a></li>
+                        <li><a href="./index.html">VR Explorer</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Satyam Nyk. Built with AI and 💙.</p>
+                <div class="footer-links">
+                    <a href="../index.html">satyamnyk.com</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

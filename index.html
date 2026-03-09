@@ -312,6 +312,146 @@
       font-weight: 600;
     }
     
+    /* Live Systems */
+    .live-systems-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-m);
+      margin: var(--space-l) 0;
+    }
+    
+    .live-system-card {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-m);
+      text-align: center;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .live-system-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #5cc8ff, transparent);
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform 0.6s ease;
+    }
+
+    .live-system-card:nth-child(1)::before {
+      background: linear-gradient(90deg, transparent, #5cc8ff, transparent);
+    }
+
+    .live-system-card:nth-child(2)::before {
+      background: linear-gradient(90deg, transparent, #7c3aed, transparent);
+    }
+
+    .live-system-card:nth-child(3)::before {
+      background: linear-gradient(90deg, transparent, #14b8a6, transparent);
+    }
+    
+    .live-system-card:hover {
+      border-color: var(--color-accent);
+      transform: translateY(-6px);
+      background: rgba(92, 200, 255, 0.08);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(92, 200, 255, 0.1);
+    }
+
+    .live-system-card:nth-child(2):hover {
+      border-color: #7c3aed;
+      background: rgba(124, 58, 237, 0.08);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(124, 58, 237, 0.1);
+    }
+
+    .live-system-card:nth-child(3):hover {
+      border-color: #14b8a6;
+      background: rgba(20, 184, 166, 0.08);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(20, 184, 166, 0.1);
+    }
+
+    .live-system-card:hover::before {
+      transform: scaleX(1);
+    }
+    
+    .system-icon {
+      font-size: 2.5rem;
+      margin-bottom: var(--space-s);
+    }
+    
+    .system-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0 0 var(--space-xs) 0;
+      color: var(--color-text);
+      font-family: 'Sora', sans-serif;
+    }
+    
+    .system-desc {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      margin: 0 0 var(--space-m) 0;
+      line-height: 1.6;
+      flex-grow: 1;
+    }
+    
+    .system-button {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: var(--radius);
+      border: none;
+      background: rgba(92, 200, 255, 0.15);
+      color: var(--color-accent);
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .live-system-card:nth-child(1) .system-button {
+      background: rgba(92, 200, 255, 0.15);
+      color: #5cc8ff;
+    }
+
+    .live-system-card:nth-child(1) .system-button:hover {
+      background: rgba(92, 200, 255, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(92, 200, 255, 0.3);
+    }
+
+    .live-system-card:nth-child(2) .system-button {
+      background: rgba(124, 58, 237, 0.15);
+      color: #7c3aed;
+    }
+
+    .live-system-card:nth-child(2) .system-button:hover {
+      background: rgba(124, 58, 237, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+    }
+
+    .live-system-card:nth-child(3) .system-button {
+      background: rgba(20, 184, 166, 0.15);
+      color: #14b8a6;
+    }
+
+    .live-system-card:nth-child(3) .system-button:hover {
+      background: rgba(20, 184, 166, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(20, 184, 166, 0.3);
+    }
+    
     /* Expertise */
     .expertise-grid {
       display: grid;
@@ -961,6 +1101,7 @@
       .contact-title { font-size: 2rem; }
       .contact-desc { font-size: 1rem; }
       .impact-stats { grid-template-columns: repeat(2, 1fr); }
+      .live-systems-grid { grid-template-columns: repeat(2, 1fr); }
       .expertise-grid { grid-template-columns: repeat(2, 1fr); }
       .case-study { padding: var(--space-l); }
     }
@@ -1000,6 +1141,8 @@
       .stat-card { padding: var(--space-m); }
       .stat-value { font-size: 1.8rem; }
       .stat-label { font-size: 0.85rem; }
+      .live-systems-grid { grid-template-columns: 1fr; gap: var(--space-m); }
+      .live-system-card { padding: var(--space-m); }
       .college-logo-container { flex: 0 0 60px; height: 60px; }
       .expertise-grid { grid-template-columns: 1fr; }
       .expertise-card { padding: var(--space-s); }
@@ -1031,6 +1174,8 @@
       .stat-card { padding: 1rem; }
       .stat-value { font-size: 1.6rem; }
       .stat-label { font-size: 0.8rem; }
+      .live-systems-grid { grid-template-columns: 1fr; gap: var(--space-m); }
+      .live-system-card { padding: var(--space-m); }
       .expertise-icon { font-size: 1.8rem; margin-bottom: var(--space-xs); }
       .expertise-title { font-size: 1rem; }
       .expertise-desc { font-size: 0.9rem; }
@@ -1138,6 +1283,34 @@
         <div class="stat-card">
           <div class="stat-value">35%</div>
           <div class="stat-label">Conversion Uplift</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Systems -->
+    <section class="live-systems" id="live-systems">
+      <div class="section-header">
+        <h2 class="section-title">Live Systems</h2>
+        <p class="section-subtitle">Interactive product systems I've built across AI, decision intelligence, and immersive platforms.</p>
+      </div>
+      <div class="live-systems-grid">
+        <div class="live-system-card">
+          <div class="system-icon">🤖</div>
+          <h3 class="system-name">Lead Agent</h3>
+          <p class="system-desc">AI voice agent that answers inbound property calls, qualifies prospects, and routes high-intent leads to sales teams.</p>
+          <a href="./ai-voice-agent/index.html" class="system-button">Launch System →</a>
+        </div>
+        <div class="live-system-card">
+          <div class="system-icon">🎓</div>
+          <h3 class="system-name">College Predictor</h3>
+          <p class="system-desc">AI-powered admission prediction engine mapping entrance ranks, board scores, and historical cutoff data to recommend colleges.</p>
+          <a href="./college-predictor/index.html" class="system-button">Launch System →</a>
+        </div>
+        <div class="live-system-card">
+          <div class="system-icon">🏢</div>
+          <h3 class="system-name">VR Explorer</h3>
+          <p class="system-desc">Immersive property discovery platform allowing buyers to explore apartments and amenities using VR environments.</p>
+          <a href="./vrexplorer/index.html" class="system-button">Launch System →</a>
         </div>
       </div>
     </section>
