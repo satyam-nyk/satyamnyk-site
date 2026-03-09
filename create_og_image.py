@@ -27,13 +27,8 @@ cyan = (92, 200, 255)
 light_gray = (210, 210, 210)
 gray = (160, 160, 160)
 light_cyan = (100, 180, 255)
-purple = (124, 58, 237)
 
-# Draw accent circles (circles with transparency effect via lighter color)
-draw.ellipse([750, -80, 1350, 520], outline=cyan, width=0)
-draw.ellipse([-80, 300, 420, 800], outline=purple, width=0)
-
-# Draw main content
+# Draw main content on left side
 draw.text((60, 95), "Satyam Nayak", font=title_font, fill=cyan)
 draw.text((60, 215), "Technical Product Manager", font=role_font, fill=cyan)
 
@@ -44,9 +39,36 @@ draw.text((60, 475), "5+ Years  •  Startup Founder  •  Metrics-Driven", font
 
 draw.text((60, 565), "satyamnyk.com", font=url_font, fill=light_cyan)
 
-# Draw accent border rectangle
-draw.rectangle([900, 80, 1150, 550], outline=cyan, width=2)
+# Load and add profile image on right side (1:1 ratio square)
+try:
+    profile = Image.open('assets/profile.png')
+    
+    # Create square crop from profile
+    width, height = profile.size
+    size = min(width, height)
+    left = (width - size) // 2
+    top = (height - size) // 2
+    profile_square = profile.crop((left, top, left + size, top + size))
+    
+    # Resize to fit in right side (400x400 square)
+    profile_square = profile_square.resize((400, 400), Image.Resampling.LANCZOS)
+    
+    # Add rounded corners
+    mask = Image.new('L', (400, 400), 0)
+    mask_draw = ImageDraw.Draw(mask)
+    mask_draw.rounded_rectangle((0, 0, 400, 400), radius=20, fill=255)
+    profile_square.putalpha(mask)
+    
+    # Paste image on right side, centered vertically
+    x_pos = 750
+    y_pos = (630 - 400) // 2
+    img.paste(profile_square, (x_pos, y_pos), profile_square)
+    
+except Exception as e:
+    print(f"Note: Could not load profile image: {e}")
 
 # Save as PNG
+img = img.convert('RGB')  # Remove alpha channel for final PNG
 img.save('assets/og-image.png', 'PNG', quality=95)
-print("✅ PNG OG image created successfully!")
+print("✅ PNG OG image with profile photo created successfully!")
+
