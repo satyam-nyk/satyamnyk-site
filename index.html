@@ -137,7 +137,7 @@
       font-size: 4.5rem;
       font-weight: 900;
       letter-spacing: -0.04em;
-      margin: 0;
+      margin: 0 0 0.5rem 0;
       background: linear-gradient(135deg, #5cc8ff 0%, #14b8a6 50%, #7c3aed 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -145,6 +145,7 @@
       font-family: 'Sora', sans-serif;
       line-height: 1.1;
       animation: fadeInDown 1s ease-out;
+      text-align: left;
     }
     
     .hero-role {
@@ -154,20 +155,22 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin: 0;
+      margin: 0 0 var(--space-m) 0;
       font-family: 'Sora', sans-serif;
       letter-spacing: 0.05em;
       animation: fadeInDown 1s ease-out 0.2s both;
+      text-align: left;
     }
     
     .hero-tagline {
       font-size: 1.3rem;
       color: var(--color-text-secondary);
-      max-width: 700px;
+      max-width: 600px;
       line-height: 1.8;
-      margin: var(--space-m) 0 var(--space-l) 0;
+      margin: 0 0 var(--space-l) 0;
       animation: fadeInUp 1s ease-out 0.4s both;
       font-weight: 500;
+      text-align: left;
     }
     
     .hero-subtext {
@@ -176,8 +179,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: var(--space-m);
-      margin-bottom: var(--space-l);
-      justify-content: center;
+      margin-bottom: var(--space-xl);
       animation: fadeInUp 1s ease-out 0.6s both;
     }
     
@@ -196,6 +198,62 @@
       backdrop-filter: blur(10px);
     }
     
+    .hero-subtext span:hover {
+      border-color: rgba(92, 200, 255, 0.6);
+      background: rgba(92, 200, 255, 0.15);
+      color: #5cc8ff;
+      transform: translateY(-2px);
+    }
+
+    .hero-visual {
+      position: relative;
+      height: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .visual-element {
+      position: absolute;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(92, 200, 255, 0.1), rgba(124, 58, 237, 0.1));
+      border: 1px solid rgba(92, 200, 255, 0.2);
+      backdrop-filter: blur(10px);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .visual-card-1 {
+      width: 280px;
+      height: 280px;
+      top: 0;
+      left: 20px;
+      animation-delay: 0s;
+      box-shadow: 0 20px 60px rgba(92, 200, 255, 0.15);
+    }
+
+    .visual-card-2 {
+      width: 220px;
+      height: 220px;
+      bottom: 0;
+      right: 0;
+      animation-delay: 3s;
+      box-shadow: 0 20px 60px rgba(124, 58, 237, 0.15);
+    }
+
+    .visual-text {
+      position: absolute;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.4);
+      text-align: center;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      line-height: 1.6;
+      z-index: 1;
+      animation: fadeInUp 1s ease-out 0.8s both;
+    }
     .hero-subtext span:hover {
       border-color: rgba(92, 200, 255, 0.6);
       background: rgba(92, 200, 255, 0.15);
@@ -965,22 +1023,14 @@
       width: 100%;
     }
     
-    /* Hero with Typography Focus */
+    /* Hero with Typography Focus - 2 Column Layout */
     .hero-container {
-      display: flex;
-      gap: var(--space-l);
-      align-items: flex-start;
-      margin-bottom: 5rem;
-      flex-direction: row-reverse;
-    }
-
-    .hero-container.full-width {
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: var(--space-xl);
       align-items: center;
-      text-align: center;
-      max-width: 1000px;
-      margin: 0 auto 6rem;
+      margin-bottom: 6rem;
+      padding: 0 var(--space-xl);
     }
 
     .hero {
@@ -1001,32 +1051,58 @@
     .accent-circle {
       position: absolute;
       border-radius: 50%;
-      opacity: 0.1;
+      opacity: 0.08;
       animation: float 6s ease-in-out infinite;
     }
 
     .accent-circle.accent-1 {
-      width: 400px;
-      height: 400px;
+      width: 450px;
+      height: 450px;
       background: linear-gradient(135deg, #5cc8ff, #7c3aed);
-      top: -100px;
+      top: -150px;
       right: -100px;
       animation-delay: 0s;
     }
 
     .accent-circle.accent-2 {
-      width: 300px;
-      height: 300px;
+      width: 350px;
+      height: 350px;
       background: linear-gradient(135deg, #7c3aed, #5cc8ff);
-      bottom: -50px;
-      left: -50px;
+      bottom: -100px;
+      left: -100px;
       animation-delay: 2s;
+    }
+
+    .accent-blob {
+      position: absolute;
+      opacity: 0.06;
+      animation: float 8s ease-in-out infinite;
+      filter: blur(40px);
+    }
+
+    .accent-blob-1 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #5cc8ff, transparent);
+      top: 0;
+      right: 0;
+      animation-delay: 1s;
+    }
+
+    .accent-blob-2 {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, #7c3aed, transparent);
+      bottom: 0;
+      left: 50%;
+      animation-delay: 3s;
     }
 
     .accent-line {
       position: absolute;
       background: linear-gradient(90deg, transparent, #5cc8ff, transparent);
-      opacity: 0.15;
+      opacity: 0;
+      display: none;
       animation: slideRight 8s ease-in-out infinite;
     }
 
@@ -1154,8 +1230,22 @@
       }
 
       .hero-container {
-        flex-direction: column;
+        grid-template-columns: 1fr;
         gap: var(--space-m);
+      }
+      
+      .hero-visual {
+        height: 350px;
+      }
+
+      .visual-card-1 {
+        width: 200px;
+        height: 200px;
+      }
+
+      .visual-card-2 {
+        width: 150px;
+        height: 150px;
       }
       
       .hero-name { font-size: 3rem; }
@@ -1179,8 +1269,29 @@
       .nav-logo { font-size: 1rem; }
       
       .hero-container {
-        flex-direction: column;
+        grid-template-columns: 1fr;
         gap: var(--space-m);
+        padding: 0 var(--space-s);
+      }
+
+      .hero-visual {
+        height: 250px;
+        margin-top: var(--space-l);
+      }
+
+      .visual-card-1 {
+        width: 150px;
+        height: 150px;
+      }
+
+      .visual-card-2 {
+        width: 100px;
+        height: 100px;
+      }
+
+      .visual-text {
+        font-size: 0.9rem;
+        width: 150px;
       }
 
       .hero-name { font-size: 2.5rem; margin-bottom: var(--space-xs); }
@@ -1283,10 +1394,10 @@
       <div class="hero-bg-elements">
         <div class="accent-circle accent-1"></div>
         <div class="accent-circle accent-2"></div>
-        <div class="accent-line accent-line-1"></div>
-        <div class="accent-line accent-line-2"></div>
+        <div class="accent-blob accent-blob-1"></div>
+        <div class="accent-blob accent-blob-2"></div>
       </div>
-      <div class="hero-container full-width">
+      <div class="hero-container">
         <div class="hero-content">
           <h1 class="hero-name">Satyam Nayak</h1>
           <div class="hero-role">Technical Product Manager</div>
@@ -1304,6 +1415,11 @@
             <a href="#work" class="btn">Work</a>
             <a href="mailto:satyam@satyamnyk.com" class="btn">Email</a>
           </div>
+        </div>
+        <div class="hero-visual">
+          <div class="visual-element visual-card-1"></div>
+          <div class="visual-element visual-card-2"></div>
+          <div class="visual-text">Building the future<br/>one feature at a time</div>
         </div>
       </div>
     </section>
