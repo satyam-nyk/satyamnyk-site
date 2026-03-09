@@ -73,24 +73,24 @@ body {
   display: none;
   flex-direction: column;
   gap: 5px;
+  cursor: pointer;
   background: none;
   border: none;
-  cursor: pointer;
-  padding: 0.5rem;
+  padding: 0;
   transition: all 0.3s ease;
 }
 
 .hamburger span {
-  width: 25px;
-  height: 2px;
+  width: 24px;
+  height: 2.5px;
   background: var(--accent-purple);
-  transition: var(--transition);
   border-radius: 2px;
+  transition: all 0.3s ease;
   transform-origin: center;
 }
 
 .hamburger.active span:nth-child(1) {
-  transform: rotate(45deg) translate(8px, 8px);
+  transform: rotate(45deg) translate(10px, 10px);
 }
 
 .hamburger.active span:nth-child(2) {
@@ -98,7 +98,7 @@ body {
 }
 
 .hamburger.active span:nth-child(3) {
-  transform: rotate(-45deg) translate(7px, -7px);
+  transform: rotate(-45deg) translate(8px, -8px);
 }
 
 .nav-links {
