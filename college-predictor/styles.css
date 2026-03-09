@@ -880,39 +880,6 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .hamburger {
-    display: flex;
-  }
-
-  .nav-links {
-    position: fixed;
-    top: 0;
-    right: -260px;
-    width: 260px;
-    height: 100vh;
-    background: #0b0f19;
-    flex-direction: column;
-    gap: 1.5rem;
-    padding: 6rem 1.5rem 2rem;
-    transition: var(--transition);
-    z-index: 999;
-    border-left: 1px solid rgba(124, 58, 237, 0.1);
-  }
-
-  .nav-links.active {
-    right: 0;
-  }
-
-  .nav-links a {
-    padding: 0.75rem;
-    border-radius: 6px;
-    display: block;
-  }
-
-  .nav-links a:hover {
-    background: rgba(124, 58, 237, 0.1);
-  }
-
   .predictor-container {
     grid-template-columns: 1fr;
   }
