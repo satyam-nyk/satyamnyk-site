@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Voice Agent for Lead Qualification - Your intelligent voice agent that answers inbound calls, qualifies leads, and routes high-intent prospects to your sales team.">
+  <title>AI Voice Agent for Lead Qualification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="../index.html" class="nav-logo">← Back to Portfolio</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#metrics">Metrics</a>
+        <a href="#architecture">Architecture</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-content">
+        <h1 class="hero-title">Your AI Sales Agent That Never Misses a Call</h1>
+        <p class="hero-subtitle">An intelligent voice agent that answers inbound calls, qualifies leads, and routes high-intent prospects to your sales team.</p>
+        <div class="hero-buttons">
+          <button class="btn btn-primary" onclick="startDemo()">Try Demo</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">See How It Works</button>
+        </div>
+      </div>
+      <div class="hero-background">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="particles"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Visual -->
+  <section class="product-visual">
+    <div class="call-interface">
+      <div class="call-header">
+        <div class="call-status">
+          <span class="pulse"></span>
+          Incoming Call
+        </div>
+        <span class="call-time">00:02:45</span>
+      </div>
+      <div class="call-content">
+        <div class="waveform">
+          <div class="wave"></div>
+          <div class="wave"></div>
+          <div class="wave"></div>
+          <div class="wave"></div>
+          <div class="wave"></div>
+        </div>
+        <div class="conversation">
+          <div class="msg customer">
+            <span class="label">Customer</span>
+            <p>Hi, is the apartment available?</p>
+          </div>
+          <div class="msg ai">
+            <span class="label">AI Agent</span>
+            <p>Yes, the apartment is currently available...</p>
+          </div>
+        </div>
+        <div class="lead-panel">
+          <h4>Lead Qualification</h4>
+          <div class="lead-item">
+            <span>Intent</span>
+            <strong>Property Inquiry</strong>
+          </div>
+          <div class="lead-item">
+            <span>Budget</span>
+            <strong>₹90L</strong>
+          </div>
+          <div class="lead-item">
+            <span>Location</span>
+            <strong>Wakad</strong>
+          </div>
+          <div class="lead-item score-high">
+            <span>Lead Score</span>
+            <strong>HIGH</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem Section -->
+  <section class="problems" id="features">
+    <h2 class="section-title">Inbound Calls Are Your Highest Intent Leads</h2>
+    <p class="section-subtitle">But most are missed or mishandled. Here's why:</p>
+    <div class="problems-grid">
+      <div class="problem-card">
+        <div class="problem-icon">📞</div>
+        <h3>Missed Calls</h3>
+        <p>Your sales team can't answer every inbound call. Prospects abandon before your team can respond.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🔄</div>
+        <h3>Repetitive Queries</h3>
+        <p>Your team wastes time answering the same qualifying questions repeatedly, killing productivity.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">⏱️</div>
+        <h3>Unqualified Prospects</h3>
+        <p>You don't know qualification metrics before routing. Sales team deals with low-intent leads.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Solution Section -->
+  <section class="solution">
+    <h2 class="section-title">Meet the AI Voice Sales Agent</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Answers Instantly</h3>
+        <p>Pick up calls 24/7. Your prospects never wait or hear a busy signal again.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>Understands Intent</h3>
+        <p>Advanced NLP captures what the prospect actually wants from the first message.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <h3>Qualifies Prospects</h3>
+        <p>Automatically scores leads based on budget, timeline, location, and intent.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Routes Smart</h3>
+        <p>Warm handoff to your sales team with complete qualification context and history.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- System Pipeline -->
+  <section class="pipeline" id="pipeline">
+    <h2 class="section-title">How It Works</h2>
+    <div class="pipeline-container">
+      <div class="pipeline-step">
+        <div class="step-icon">📱</div>
+        <h3>Incoming Call</h3>
+        <p>Customer calls your number</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">🎤</div>
+        <h3>Speech Recognition</h3>
+        <p>Real-time transcription</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">🔍</div>
+        <h3>Intent Detection</h3>
+        <p>Understand customer needs</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">⭐</div>
+        <h3>Lead Qualification</h3>
+        <p>Score the prospect</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">🔗</div>
+        <h3>CRM Routing</h3>
+        <p>Connect to sales team</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Metrics Section -->
+  <section class="metrics" id="metrics">
+    <h2 class="section-title">Trusted by Forward-Thinking Teams</h2>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-number">10K+</div>
+        <p>Calls handled monthly</p>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number">24/7</div>
+        <p>AI availability</p>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number">60%</div>
+        <p>Reduction in manual handling</p>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number">95%</div>
+        <p>Prospect satisfaction rate</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section class="architecture" id="architecture">
+    <h2 class="section-title">System Architecture</h2>
+    <div class="architecture-grid">
+      <div class="arch-block">
+        <div class="block-icon">☎️</div>
+        <h3>Telephony Layer</h3>
+        <p>Handles inbound call routing and connection management</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">🎙️</div>
+        <h3>Speech Recognition</h3>
+        <p>Real-time audio-to-text conversion with high accuracy</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">🤖</div>
+        <h3>LLM Processing</h3>
+        <p>Advanced language model for contextual understanding</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">💬</div>
+        <h3>Conversation Engine</h3>
+        <p>Manages multi-turn dialogue and conversation flow</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">📊</div>
+        <h3>Lead Scoring</h3>
+        <p>Intelligent qualification based on multiple factors</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">🔗</div>
+        <h3>CRM Integration</h3>
+        <p>Seamless integration with Salesforce, HubSpot, and more</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Modal -->
+  <div id="demoModal" class="modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeDemo()">✕</button>
+      <h2>Interactive Call Demo</h2>
+      <p class="demo-subtitle">Experience how the AI Voice Agent qualifies leads in real-time:</p>
+      <div class="demo-container">
+        <div class="demo-conversation" id="demoConversation"></div>
+        <div class="demo-panel">
+          <h4>Lead Qualification Panel</h4>
+          <div id="demoLeadPanel" class="demo-lead-panel">
+            <div class="lead-item">
+              <span>Intent</span>
+              <strong>—</strong>
+            </div>
+            <div class="lead-item">
+              <span>Budget</span>
+              <strong>—</strong>
+            </div>
+            <div class="lead-item">
+              <span>Location</span>
+              <strong>—</strong>
+            </div>
+            <div class="lead-item">
+              <span>Lead Score</span>
+              <strong>—</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="simulateConversation()" style="width: 100%; margin-top: 2rem;">Start Simulation</button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pipeline">Pipeline</a></li>
+          <li><a href="#metrics">Metrics</a></li>
+          <li><a href="#architecture">Architecture</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Projects</h4>
+        <ul>
+          <li><a href="https://satyamnyk.com">satyamnyk.com</a></li>
+          <li><a href="../index.html">Portfolio</a></li>
+          <li><a href="#">VR Property Explorer</a></li>
+          <li><a href="#">College Admission Intelligence</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 AI Voice Agent. Built with precision.</p>
+    </div>
+  </footer>
+
+  <script src="demo.js"></script>
+</body>
+</html>
