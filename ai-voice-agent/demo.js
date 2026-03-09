@@ -45,46 +45,61 @@ const conversationFlow = [
   {
     type: 'customer',
     text: 'Hi, is the apartment available?',
-    delay: 500
+    delay: 800
   },
   {
     type: 'ai',
-    text: 'Yes, the apartment is currently available. I\'d be happy to help qualify your interest.',
-    delay: 2500
-  },
-  {
-    type: 'ai',
-    text: 'Are you looking for a 2 BHK or 3 BHK?',
-    delay: 3500
+    text: 'Thank you for calling! Welcome to our property consultation. Yes, we have some great options available. To help me find the perfect match for you, I\'d like to ask a few quick questions.',
+    delay: 3000
   },
   {
     type: 'customer',
-    text: '2 BHK.',
+    text: 'Sure, go ahead.',
     delay: 5000
   },
   {
     type: 'ai',
-    text: 'Great! What is your budget range?',
+    text: 'What is your budget range for the property?',
     delay: 6000
   },
   {
     type: 'customer',
-    text: 'Around 90 lakhs.',
+    text: 'Around 80 to 90 lakhs.',
     delay: 7500
   },
   {
     type: 'ai',
-    text: 'Perfect! Let me find the best match for you. One moment...',
-    delay: 9000
+    text: 'Excellent! And which location are you interested in? We have properties in Wakad, Hinjewadi, and Baner.',
+    delay: 9500
+  },
+  {
+    type: 'customer',
+    text: 'Wakad would be perfect. How many bedrooms are available?',
+    delay: 11000
+  },
+  {
+    type: 'ai',
+    text: 'In your budget at Wakad, we have beautiful 2 and 3 BHK options with modern amenities, parking, and a swimming pool.',
+    delay: 13500
+  },
+  {
+    type: 'customer',
+    text: 'That sounds great! Can I schedule a site visit?',
+    delay: 15000
+  },
+  {
+    type: 'ai',
+    text: 'Absolutely! I\'m connecting you with a specialist who will schedule your visit at your convenience. They\'ll also send you the property brochure.',
+    delay: 17000
   },
   {
     type: 'system',
-    text: 'Connecting you to a sales advisor...',
-    delay: 11000
+    text: '✓ Lead Qualified & Transferred to Specialist',
+    delay: 19000
   }
 ];
 
-// Lead panel updates
+// Lead panel updates with more realistic data
 const leadPanelUpdates = [
   {
     delay: 1500,
@@ -92,11 +107,11 @@ const leadPanelUpdates = [
       intent: 'Property Inquiry',
       budget: '—',
       location: '—',
-      score: '—'
+      score: '⊘'
     }
   },
   {
-    delay: 4500,
+    delay: 5000,
     data: {
       intent: 'Property Inquiry',
       budget: '—',
@@ -105,21 +120,30 @@ const leadPanelUpdates = [
     }
   },
   {
-    delay: 6500,
+    delay: 8000,
     data: {
-      intent: 'Property Inquiry',
-      budget: '₹90L',
+      intent: 'Active Buyer',
+      budget: '₹80-90L',
       location: '—',
       score: 'MEDIUM'
     }
   },
   {
-    delay: 8500,
+    delay: 12000,
     data: {
-      intent: 'Property Inquiry',
-      budget: '₹90L',
+      intent: 'Active Buyer',
+      budget: '₹80-90L',
       location: 'Wakad',
       score: 'HIGH'
+    }
+  },
+  {
+    delay: 15500,
+    data: {
+      intent: 'Ready to Visit',
+      budget: '₹80-90L',
+      location: 'Wakad',
+      score: 'PREMIUM'
     }
   }
 ];
@@ -150,23 +174,72 @@ function simulateConversation() {
     </div>
   `;
 
-  // Add initial greeting
+  // Add call header with waveform animation
   setTimeout(() => {
-    const greeting = document.createElement('div');
-    greeting.className = 'demo-msg ai';
-    greeting.innerHTML = '<span class="label">AI Agent</span><p>Thank you for calling! I\'ll help answer your questions. What can I help you with today?</p>';
-    conversation.appendChild(greeting);
-    conversation.scrollTop = conversation.scrollHeight;
-  }, 300);
+    const header = document.createElement('div');
+    header.style.cssText = 'text-align: center; padding: 1rem 0; margin-bottom: 1rem; border-bottom: 1px solid rgba(0, 212, 255, 0.2);';
+    header.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+        <span style="width: 8px; height: 8px; background: #00d4ff; border-radius: 50%; animation: pulse 1s infinite;"></span>
+        <div style="font-weight: 600; color: #00d4ff;">Call in Progress</div>
+      </div>
+      <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6);">Duration: <span id="callTimer">00:00</span></div>
+    `;
+    conversation.appendChild(header);
+  }, 200);
 
-  // Add conversation messages
+  // Start call timer
+  let seconds = 0;
+  const timerInterval = setInterval(() => {
+    seconds++;
+    const timer = document.getElementById('callTimer');
+    if (timer) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      timer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+  }, 1000);
+
+  // Helper function to add typing indicator
+  const addTypingIndicator = () => {
+    const typing = document.createElement('div');
+    typing.className = 'demo-msg ai';
+    typing.id = 'typingIndicator';
+    typing.innerHTML = `
+      <span class="label">AI Agent</span>
+      <div class="typing-indicator">
+        <span style="animation: bounce 1.4s infinite;"></span>
+        <span style="animation: bounce 1.4s infinite 0.2s;"></span>
+        <span style="animation: bounce 1.4s infinite 0.4s;"></span>
+      </div>
+    `;
+    conversation.appendChild(typing);
+    conversation.scrollTop = conversation.scrollHeight;
+  };
+
+  // Remove typing indicator
+  const removeTypingIndicator = () => {
+    const typing = document.getElementById('typingIndicator');
+    if (typing) typing.remove();
+  };
+
+  // Add conversation messages with typing indicators
   conversationFlow.forEach((msg, index) => {
+    // Add typing indicator before AI messages
+    if ((msg.type === 'ai' || msg.type === 'system') && index > 0) {
+      setTimeout(() => {
+        addTypingIndicator();
+      }, msg.delay - 1000);
+    }
+
     setTimeout(() => {
+      removeTypingIndicator();
+      
       const msgEl = document.createElement('div');
       
       if (msg.type === 'system') {
-        msgEl.className = 'demo-msg ai';
-        msgEl.innerHTML = `<span class="label">System</span><p>${msg.text}</p>`;
+        msgEl.style.cssText = 'text-align: center; padding: 1rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; margin: 1rem 0; font-weight: 500; color: #10b981;';
+        msgEl.textContent = msg.text;
       } else {
         msgEl.className = `demo-msg ${msg.type}`;
         const label = msg.type === 'customer' ? 'Customer' : 'AI Agent';
@@ -187,12 +260,16 @@ function simulateConversation() {
 
   // Show completion message
   setTimeout(() => {
+    removeTypingIndicator();
     const completion = document.createElement('div');
-    completion.className = 'demo-msg ai';
-    completion.innerHTML = '<span class="label">System</span><p>Your information has been captured and a specialist will contact you within 2 hours.</p>';
+    completion.style.cssText = 'text-align: center; padding: 1rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 6px; margin-top: 1rem; font-weight: 500; color: #10b981;';
+    completion.innerHTML = '✓ Call Completed - Lead Successfully Qualified & Transferred';
     conversation.appendChild(completion);
     conversation.scrollTop = conversation.scrollHeight;
-  }, 12000);
+    
+    // Clear timer when done
+    clearInterval(timerInterval);
+  }, 19500);
 }
 
 // Update lead panel data
