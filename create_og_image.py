@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 from PIL import Image, ImageDraw, ImageFont
 
-# Create base image with poster background color (#2596be)
-img = Image.new('RGB', (1200, 630), color=(37, 150, 190))
+# Create base image with poster background color
+img = Image.new('RGB', (1200, 630), color=(10, 14, 26))
 draw = ImageDraw.Draw(img)
+
+# Draw gradient background (poster style)
+for y in range(630):
+    ratio = y / 630.0
+    r = int(26 * (1 - ratio) + 10 * ratio)
+    g = int(32 * (1 - ratio) + 14 * ratio)
+    b = int(51 * (1 - ratio) + 26 * ratio)
+    draw.line([(0, y), (1200, y)], fill=(r, g, b))
 
 # Load fonts
 try:
