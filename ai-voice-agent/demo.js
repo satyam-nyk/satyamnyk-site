@@ -1,18 +1,17 @@
-// Mobile Menu Toggle
-function toggleMobileMenu() {
-  const menu = document.getElementById('mobileMenu');
-  const hamburger = document.querySelector('.hamburger');
-  menu.classList.toggle('active');
-  hamburger.classList.toggle('active');
-}
+// Mobile Menu Toggle - Hamburger functionality
+const hamburger = document.getElementById('hamburger');
+const mobileNav = document.getElementById('mobileNav');
 
-// Close mobile menu when link is clicked
-document.addEventListener('DOMContentLoaded', function() {
-  const mobileLinks = document.querySelectorAll('#mobileMenu a');
-  mobileLinks.forEach(link => {
-    link.addEventListener('click', function() {
-      toggleMobileMenu();
-    });
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('active');
+  mobileNav.classList.toggle('active');
+});
+
+// Close menu when a link is clicked
+document.querySelectorAll('.mobile-nav a').forEach(link => {
+  link.addEventListener('click', () => {
+    hamburger.classList.remove('active');
+    mobileNav.classList.remove('active');
   });
 });
 
