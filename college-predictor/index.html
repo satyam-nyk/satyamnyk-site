@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI-Powered College Admission Predictor - Predict realistic college admissions using entrance ranks, board scores, and historical cutoff intelligence.">
+  <title>College Admission Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="../index.html" class="nav-logo">← Back to Portfolio</a>
+      <div class="nav-links">
+        <a href="#predictor">Predictor</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#metrics">Metrics</a>
+        <a href="#architecture">Architecture</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-content">
+        <h1 class="hero-title">AI-Powered College Admission Predictor</h1>
+        <p class="hero-subtitle">Predict realistic college admissions using entrance ranks, board scores, and historical cutoff intelligence.</p>
+        <div class="hero-buttons">
+          <button class="btn btn-primary" onclick="scrollToPredictor()">Try Predictor</button>
+          <button class="btn btn-secondary" onclick="scrollToSection('pipeline')">See How It Works</button>
+        </div>
+      </div>
+      <div class="hero-background">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="particles"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem Section -->
+  <section class="problems">
+    <h2 class="section-title">Students Apply Blindly</h2>
+    <p class="section-subtitle">Without proper admission intelligence, students face critical challenges:</p>
+    <div class="problems-grid">
+      <div class="problem-card">
+        <div class="problem-icon">📊</div>
+        <h3>Unclear Cutoff Trends</h3>
+        <p>Admission cutoffs vary yearly with no clear patterns. Students don't know realistic chances.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📑</div>
+        <h3>Scattered Admission Data</h3>
+        <p>Data spread across multiple sources. Hard to cross-reference ranks, marks, and seat allocations.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">❌</div>
+        <h3>Unrealistic Choices</h3>
+        <p>Students either over-apply (dreams) or under-apply (safe). No data-driven middle ground.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🤔</div>
+        <h3>Poor Counseling Tools</h3>
+        <p>Counselors lack real-time data. Recommendations are intuition-based, not data-backed.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Solution Section -->
+  <section class="solution">
+    <h2 class="section-title">Admission Decisions Powered by Data</h2>
+    <p class="section-subtitle">Our AI system analyzes multiple dimensions to power realistic predictions:</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Entrance Rank Analysis</h3>
+        <p>Benchmarks your rank against historical cutoff patterns across thousands of students.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Board Score Integration</h3>
+        <p>Combines board marks with entrance rank for comprehensive candidate profiling.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3>Historical Cutoff Engine</h3>
+        <p>Analyzes 5+ years of cutoff data to identify trends and predict future patterns.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🏛️</div>
+        <h3>Seat Matrix & Quotas</h3>
+        <p>Factors in total seats, category cutoffs, and state-wise allocations.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔬</div>
+        <h3>Prediction Model</h3>
+        <p>ML model trained on 50K+ admission outcomes. Achieves 85%+ accuracy.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💡</div>
+        <h3>Smart Recommendations</h3>
+        <p>Get ranked college suggestions with admission probability for each option.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Prediction Pipeline -->
+  <section class="pipeline" id="pipeline">
+    <h2 class="section-title">How It Works</h2>
+    <div class="pipeline-container">
+      <div class="pipeline-step">
+        <div class="step-icon">👤</div>
+        <h3>Student Input</h3>
+        <p>Your profile details</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">📊</div>
+        <h3>Rank + Marks</h3>
+        <p>Entrance & board scores</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">📚</div>
+        <h3>Cutoff Engine</h3>
+        <p>Historical analysis</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">🤖</div>
+        <h3>Prediction Model</h3>
+        <p>ML processing</p>
+      </div>
+      <div class="pipeline-arrow">→</div>
+      <div class="pipeline-step">
+        <div class="step-icon">🎓</div>
+        <h3>Recommendations</h3>
+        <p>College matches</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Predictor -->
+  <section class="predictor-section" id="predictor">
+    <h2 class="section-title">Try the Predictor</h2>
+    <div class="predictor-container">
+      <div class="predictor-form">
+        <h3>Enter Your Details</h3>
+        <div class="form-group">
+          <label>Entrance Exam</label>
+          <select id="examSelect">
+            <option value="jee">JEE Main</option>
+            <option value="neet">NEET</option>
+            <option value="bitsat">BITSAT</option>
+            <option value="cuet">CUET</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Your Rank</label>
+          <input type="number" id="rankInput" placeholder="e.g., 18000" min="1" max="300000">
+        </div>
+        <div class="form-group">
+          <label>Board Marks (%)</label>
+          <input type="number" id="marksInput" placeholder="e.g., 88" min="0" max="100" step="0.1">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="categorySelect">
+            <option value="general">General</option>
+            <option value="obc">OBC</option>
+            <option value="sc">SC</option>
+            <option value="st">ST</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>State</label>
+          <select id="stateSelect">
+            <option value="mp">Madhya Pradesh</option>
+            <option value="mh">Maharashtra</option>
+            <option value="up">Uttar Pradesh</option>
+            <option value="tn">Tamil Nadu</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="predictColleges()" style="width: 100%; margin-top: 1.5rem;">Predict Colleges</button>
+      </div>
+
+      <div class="predictor-results">
+        <div id="loadingContainer" class="loading-container" style="display: none;">
+          <div class="analysis-steps">
+            <div class="step-item">
+              <span class="step-number">1</span>
+              <p>Analyzing Rank</p>
+            </div>
+            <div class="step-item">
+              <span class="step-number">2</span>
+              <p>Evaluating Cutoff Trends</p>
+            </div>
+            <div class="step-item">
+              <span class="step-number">3</span>
+              <p>Running Admission Prediction Model</p>
+            </div>
+            <div class="step-item">
+              <span class="step-number">4</span>
+              <p>Generating College Recommendations</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="resultsContainer" style="display: none;">
+          <h3>Predicted Colleges</h3>
+          <div id="collegeResults" class="colleges-grid"></div>
+        </div>
+
+        <div id="counselorContainer" style="display: none;" class="counselor-panel">
+          <div class="counselor-header">
+            <span class="counselor-icon">🤖</span>
+            <h4>AI Counselor</h4>
+          </div>
+          <div id="counselorChat" class="counselor-chat"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Metrics Section -->
+  <section class="metrics" id="metrics">
+    <h2 class="section-title">Trusted by Students & Counselors</h2>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-number">50K+</div>
+        <p>Students Analyzed</p>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number">600+</div>
+        <p>Colleges Indexed</p>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number">400+</div>
+        <p>Courses Mapped</p>
+      </div>
+      <div class="metric-card">
+        <div class="metric-number">20+</div>
+        <p>Entrance Exams</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section class="architecture" id="architecture">
+    <h2 class="section-title">System Architecture</h2>
+    <div class="architecture-grid">
+      <div class="arch-block">
+        <div class="block-icon">💾</div>
+        <h3>Data Layer</h3>
+        <p>Centralized repository of college cutoffs, seats, courses, and historical admission data</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">📊</div>
+        <h3>Cutoff Intelligence</h3>
+        <p>Engine analyzing trends, patterns, and year-on-year cutoff variations</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">🤖</div>
+        <h3>Prediction Model</h3>
+        <p>ML model trained on 50K+ admission outcomes with 85%+ accuracy</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">💡</div>
+        <h3>Recommendation Engine</h3>
+        <p>Generates ranked college suggestions with probability scores</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">💬</div>
+        <h3>AI Counselor</h3>
+        <p>Conversational assistant explaining predictions and recommendations</p>
+      </div>
+      <div class="arch-block">
+        <div class="block-icon">👤</div>
+        <h3>Student Interface</h3>
+        <p>Intuitive UI for entering profile and viewing personalized predictions</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#predictor">Predictor</a></li>
+          <li><a href="#pipeline">Pipeline</a></li>
+          <li><a href="#metrics">Metrics</a></li>
+          <li><a href="#architecture">Architecture</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Projects</h4>
+        <ul>
+          <li><a href="https://satyamnyk.com">satyamnyk.com</a></li>
+          <li><a href="../index.html">Portfolio</a></li>
+          <li><a href="../ai-voice-agent/index.html">AI Voice Agent</a></li>
+          <li><a href="#">VR Property Explorer</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 College Admission Predictor. Built with precision.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
