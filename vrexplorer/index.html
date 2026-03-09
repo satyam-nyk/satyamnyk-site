@@ -166,32 +166,74 @@
             <h2 class="section-title">Interactive Apartment Viewer</h2>
             <div class="viewer-container">
                 <div class="viewer-window">
+                    <div class="viewer-controls-top">
+                        <button class="view-toggle active" id="toggle3D" onclick="toggleView('3d')">🌐 360° View</button>
+                        <button class="view-toggle" id="toggleFloorplan" onclick="toggleView('floorplan')">📐 Floor Plan</button>
+                    </div>
                     <div class="viewer-display">
-                        <div id="viewerContent" class="viewer-content">
+                        <div id="viewerContent" class="viewer-content active-view">
                             <div class="room-indicator">Living Room</div>
                             <div class="room-visualization">
                                 360° panoramic space with natural lighting and balcony access
+                            </div>
+                        </div>
+                        <div id="floorplanContent" class="viewer-content">
+                            <div class="floorplan-display">
+                                <svg viewBox="0 0 400 500" style="width: 100%; height: 100%;">
+                                    <rect x="20" y="20" width="360" height="460" fill="#f0f0f0" stroke="#333" stroke-width="2"/>
+                                    <rect x="40" y="40" width="140" height="120" fill="#e8f4f8" stroke="#333" stroke-width="2"/>
+                                    <text x="110" y="110" text-anchor="middle" font-size="12" fill="#333">Living<tspan x="110" dy="15">Room</tspan></text>
+                                    <rect x="200" y="40" width="100" height="100" fill="#fff9e6" stroke="#333" stroke-width="2"/>
+                                    <text x="250" y="105" text-anchor="middle" font-size="11" fill="#333">Master<tspan x="250" dy="12">Bedroom</tspan></text>
+                                    <rect x="320" y="40" width="60" height="120" fill="#e6f3ff" stroke="#333" stroke-width="2"/>
+                                    <text x="350" y="110" text-anchor="middle" font-size="10" fill="#333">Balcony</text>
+                                    <rect x="40" y="180" width="110" height="80" fill="#fff0e6" stroke="#333" stroke-width="2"/>
+                                    <text x="95" y="225" text-anchor="middle" font-size="10" fill="#333">Kitchen</text>
+                                    <rect x="160" y="180" width="70" height="80" fill="#f0e6ff" stroke="#333" stroke-width="2"/>
+                                    <text x="195" y="225" text-anchor="middle" font-size="10" fill="#333">Bath</text>
+                                    <rect x="240" y="180" width="70" height="80" fill="#f0e6ff" stroke="#333" stroke-width="2"/>
+                                    <text x="275" y="225" text-anchor="middle" font-size="10" fill="#333">Bath</text>
+                                    <rect x="320" y="180" width="60" height="80" fill="#fff0e6" stroke="#333" stroke-width="2"/>
+                                    <text x="350" y="225" text-anchor="middle" font-size="10" fill="#333">Foyer</text>
+                                    <rect x="40" y="280" width="340" height="100" fill="#ffe6e6" stroke="#333" stroke-width="2"/>
+                                    <text x="210" y="335" text-anchor="middle" font-size="11" fill="#333">Common Areas / Lobby</text>
+                                </svg>
                             </div>
                         </div>
                     </div>
                     <div class="viewer-controls">
                         <button class="room-button active" onclick="switchRoom('Living Room', this)">Living Room</button>
                         <button class="room-button" onclick="switchRoom('Kitchen', this)">Kitchen</button>
-                        <button class="room-button" onclick="switchRoom('Bedroom', this)">Bedroom</button>
+                        <button class="room-button" onclick="switchRoom('Master Bedroom', this)">Master</button>
                         <button class="room-button" onclick="switchRoom('Balcony', this)">Balcony</button>
                         <button class="room-button" onclick="switchRoom('Amenities', this)">Amenities</button>
                     </div>
                 </div>
 
                 <div class="room-details">
-                    <h3>Living Room</h3>
-                    <ul id="roomInfo">
+                    <h3 id="roomTitle">Living Room</h3>
+                    <div class="room-specs">
+                        <div class="spec-item">
+                            <span class="spec-label">Area</span>
+                            <span class="spec-value" id="roomArea">18ft × 22ft</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">View</span>
+                            <span class="spec-value" id="roomView">East-facing</span>
+                        </div>
+                        <div class="spec-item">
+                            <span class="spec-label">Light</span>
+                            <span class="spec-value" id="roomLight">Natural + Balcony</span>
+                        </div>
+                    </div>
+                    <ul id="roomInfo" class="room-features">
                         <li>360° panoramic space with natural lighting</li>
                         <li>East-facing balcony with city views</li>
-                        <li>Dimensions: 18ft × 22ft</li>
                         <li>Premium marble flooring</li>
                         <li>Full-wall glass partition to balcony</li>
+                        <li>Air conditioning with smart controls</li>
                     </ul>
+                    <button class="btn btn-primary" style="margin-top: 1.5rem; width: 100%;">📱 Request Property Tour</button>
                 </div>
             </div>
         </div>

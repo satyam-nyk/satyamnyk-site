@@ -19,36 +19,48 @@ document.querySelectorAll('.mobile-nav a').forEach(link => {
 const roomData = {
     'Living Room': {
         description: '360° panoramic space with natural lighting and balcony access',
+        area: '18ft × 22ft',
+        view: 'East-facing',
+        light: 'Natural + Balcony',
         info: [
             '360° panoramic space with natural lighting',
             'East-facing balcony with city views',
-            'Dimensions: 18ft × 22ft',
             'Premium marble flooring',
-            'Full-wall glass partition to balcony'
+            'Full-wall glass partition to balcony',
+            'Air conditioning with smart controls'
         ]
     },
     'Kitchen': {
         description: 'Modern kitchen with island and premium appliances',
+        area: '12ft × 14ft',
+        view: 'East-facing',
+        light: 'Morning sunlight',
         info: [
             'Modular kitchen with island counter',
             'Premium stainless steel appliances',
-            'Dimensions: 12ft × 14ft',
             'Integrated dishwasher and microwave',
-            'Morning sunlight through east window'
+            'Granite countertops with storage',
+            'Chimney and modular gas stove'
         ]
     },
-    'Bedroom': {
+    'Master Bedroom': {
         description: 'Spacious master bedroom with attached balcony',
+        area: '16ft × 18ft',
+        view: 'Garden views',
+        light: 'Sunlit',
         info: [
             'Spacious master suite with walk-in closet',
             'Attached balcony with garden views',
-            'Dimensions: 16ft × 18ft',
             'AC provision and split AC ready',
-            'Soft carpet flooring with premium finish'
+            'Soft carpet flooring with premium finish',
+            'Large windows for natural ventilation'
         ]
     },
     'Balcony': {
         description: 'Panoramic view balcony overlooking the neighborhood',
+        area: '8ft × 20ft',
+        view: 'Panoramic',
+        light: 'Full sunlight',
         info: [
             'Panoramic balcony with unobstructed views',
             'Weather-resistant flooring',
@@ -59,6 +71,9 @@ const roomData = {
     },
     'Amenities': {
         description: 'World-class facilities including pool, gym, and gardens',
+        area: 'Multiple zones',
+        view: '360° access',
+        light: 'Open-air',
         info: [
             'Olympic-size swimming pool with jacuzzi',
             'Equipped gym with cardio and strength training',
@@ -90,6 +105,11 @@ function switchRoom(roomName, buttonElement) {
         document.querySelector('.room-indicator').textContent = roomName;
         document.querySelector('.room-visualization').textContent = data.description;
         
+        // Update room specs
+        document.getElementById('roomArea').textContent = data.area;
+        document.getElementById('roomView').textContent = data.view;
+        document.getElementById('roomLight').textContent = data.light;
+        
         // Clear and rebuild info list
         roomInfo.innerHTML = '';
         data.info.forEach(info => {
@@ -103,6 +123,25 @@ function switchRoom(roomName, buttonElement) {
         
         viewerContent.style.opacity = '1';
     }, 150);
+}
+
+// Toggle between 3D and floor plan views
+function toggleView(viewType) {
+    // Update button states
+    document.getElementById('toggle3D').classList.toggle('active', viewType === '3d');
+    document.getElementById('toggleFloorplan').classList.toggle('active', viewType === 'floorplan');
+    
+    // Toggle view content
+    const viewerContent = document.getElementById('viewerContent');
+    const floorplanContent = document.getElementById('floorplanContent');
+    
+    if (viewType === '3d') {
+        viewerContent.classList.add('active-view');
+        floorplanContent.classList.remove('active-view');
+    } else {
+        viewerContent.classList.remove('active-view');
+        floorplanContent.classList.add('active-view');
+    }
 }
 
 // Switch room in VR walkthrough
@@ -179,4 +218,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize room viewer with fade transition
     const viewerContent = document.getElementById('viewerContent');
     viewerContent.style.transition = 'opacity 0.3s ease-out';
+    
+    // Initialize 3D view as active
+    viewerContent.classList.add('active-view');
+    const toggle3D = document.getElementById('toggle3D');
+    if (toggle3D) {
+        toggle3D.classList.add('active');
+    }
 });
