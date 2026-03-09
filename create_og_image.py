@@ -83,7 +83,7 @@ except Exception as e:
 
 # Convert and save as PNG
 img = img.convert('RGB')
-img.save('assets/og-poster.png', 'PNG', quality=95)
+img.save('assets/og-img.png', 'PNG', quality=95)
 print("✅ OG poster with profile photo and accent pattern created!")
 
 
