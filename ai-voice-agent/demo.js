@@ -1,3 +1,32 @@
+// Mobile Menu Toggle
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobileMenu');
+  const hamburger = document.querySelector('.hamburger');
+  menu.classList.toggle('active');
+  hamburger.classList.toggle('active');
+}
+
+// Close mobile menu when link is clicked
+document.addEventListener('DOMContentLoaded', function() {
+  const mobileLinks = document.querySelectorAll('#mobileMenu a');
+  mobileLinks.forEach(link => {
+    link.addEventListener('click', function() {
+      toggleMobileMenu();
+    });
+  });
+});
+
+// Scroll to section
+function scrollToSection(sectionId) {
+  if (sectionId.startsWith('#')) {
+    sectionId = sectionId.substring(1);
+  }
+  const element = document.getElementById(sectionId);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
 // Demo Modal Functions
 const modal = document.getElementById('demoModal');
 

@@ -1,3 +1,21 @@
+// Mobile Menu Toggle
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobileMenu');
+  const hamburger = document.querySelector('.hamburger');
+  menu.classList.toggle('active');
+  hamburger.classList.toggle('active');
+}
+
+// Close mobile menu when link is clicked
+document.addEventListener('DOMContentLoaded', function() {
+  const mobileLinks = document.querySelectorAll('#mobileMenu a');
+  mobileLinks.forEach(link => {
+    link.addEventListener('click', function() {
+      toggleMobileMenu();
+    });
+  });
+});
+
 // Scroll functions
 function scrollToPredictor() {
   const predictorSection = document.getElementById('predictor');
@@ -5,6 +23,9 @@ function scrollToPredictor() {
 }
 
 function scrollToSection(sectionId) {
+  if (sectionId.startsWith('#')) {
+    sectionId = sectionId.substring(1);
+  }
   const section = document.getElementById(sectionId);
   if (section) {
     section.scrollIntoView({ behavior: 'smooth' });

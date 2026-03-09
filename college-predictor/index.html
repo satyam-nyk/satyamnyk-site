@@ -14,12 +14,20 @@
   <!-- Navigation -->
   <nav class="navbar">
     <div class="nav-container">
-      <a href="../index.html" class="nav-logo">← Back to Portfolio</a>
-      <div class="nav-links">
+      <div class="nav-logo">
+        <span class="logo-icon">🎓</span>
+        <span class="logo-text">CollegePredictor</span>
+      </div>
+      <button class="hamburger" onclick="toggleMobileMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-links" id="mobileMenu">
         <a href="#predictor">Predictor</a>
         <a href="#pipeline">Pipeline</a>
         <a href="#metrics">Metrics</a>
-        <a href="#architecture">Architecture</a>
+        <a href="../index.html">Back to Portfolio</a>
       </div>
     </div>
   </nav>
@@ -31,8 +39,8 @@
         <h1 class="hero-title">AI-Powered College Admission Predictor</h1>
         <p class="hero-subtitle">Predict realistic college admissions using entrance ranks, board scores, and historical cutoff intelligence.</p>
         <div class="hero-buttons">
-          <button class="btn btn-primary" onclick="scrollToPredictor()">Try Predictor</button>
-          <button class="btn btn-secondary" onclick="scrollToSection('pipeline')">See How It Works</button>
+          <button class="btn btn-primary" onclick="scrollToSection('#predictor')">Try Predictor</button>
+          <button class="btn btn-secondary" onclick="scrollToSection('#pipeline')">See How It Works</button>
         </div>
       </div>
       <div class="hero-background">

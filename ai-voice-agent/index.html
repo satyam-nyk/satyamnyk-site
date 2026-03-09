@@ -14,12 +14,20 @@
   <!-- Navigation -->
   <nav class="navbar">
     <div class="nav-container">
-      <a href="../index.html" class="nav-logo">← Back to Portfolio</a>
-      <div class="nav-links">
+      <div class="nav-logo">
+        <span class="logo-icon">🤖</span>
+        <span class="logo-text">LeadAgent</span>
+      </div>
+      <button class="hamburger" onclick="toggleMobileMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-links" id="mobileMenu">
         <a href="#features">Features</a>
-        <a href="#pipeline">Pipeline</a>
-        <a href="#metrics">Metrics</a>
+        <a href="#demo">Demo</a>
         <a href="#architecture">Architecture</a>
+        <a href="../index.html">Back to Portfolio</a>
       </div>
     </div>
   </nav>
@@ -31,8 +39,8 @@
         <h1 class="hero-title">Your AI Sales Agent That Never Misses a Call</h1>
         <p class="hero-subtitle">An intelligent voice agent that answers inbound calls, qualifies leads, and routes high-intent prospects to your sales team.</p>
         <div class="hero-buttons">
-          <button class="btn btn-primary" onclick="startDemo()">Try Demo</button>
-          <button class="btn btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">See How It Works</button>
+          <button class="btn btn-primary" onclick="scrollToSection('#demo')">Try Demo</button>
+          <button class="btn btn-secondary" onclick="scrollToSection('#pipeline')">See How It Works</button>
         </div>
       </div>
       <div class="hero-background">
