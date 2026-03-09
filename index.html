@@ -145,7 +145,6 @@
       font-family: 'Sora', sans-serif;
       line-height: 1.1;
       animation: fadeInDown 1s ease-out;
-      text-align: left;
     }
     
     .hero-role {
@@ -159,18 +158,16 @@
       font-family: 'Sora', sans-serif;
       letter-spacing: 0.05em;
       animation: fadeInDown 1s ease-out 0.2s both;
-      text-align: left;
     }
     
     .hero-tagline {
       font-size: 1.3rem;
       color: var(--color-text-secondary);
-      max-width: 600px;
+      max-width: 800px;
       line-height: 1.8;
       margin: 0 0 var(--space-l) 0;
       animation: fadeInUp 1s ease-out 0.4s both;
       font-weight: 500;
-      text-align: left;
     }
     
     .hero-subtext {
@@ -203,56 +200,6 @@
       background: rgba(92, 200, 255, 0.15);
       color: #5cc8ff;
       transform: translateY(-2px);
-    }
-
-    .hero-visual {
-      position: relative;
-      height: 500px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .visual-element {
-      position: absolute;
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(92, 200, 255, 0.1), rgba(124, 58, 237, 0.1));
-      border: 1px solid rgba(92, 200, 255, 0.2);
-      backdrop-filter: blur(10px);
-      animation: float 6s ease-in-out infinite;
-    }
-
-    .visual-card-1 {
-      width: 280px;
-      height: 280px;
-      top: 0;
-      left: 20px;
-      animation-delay: 0s;
-      box-shadow: 0 20px 60px rgba(92, 200, 255, 0.15);
-    }
-
-    .visual-card-2 {
-      width: 220px;
-      height: 220px;
-      bottom: 0;
-      right: 0;
-      animation-delay: 3s;
-      box-shadow: 0 20px 60px rgba(124, 58, 237, 0.15);
-    }
-
-    .visual-text {
-      position: absolute;
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.4);
-      text-align: center;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 200px;
-      line-height: 1.6;
-      z-index: 1;
-      animation: fadeInUp 1s ease-out 0.8s both;
     }
     .hero-subtext span:hover {
       border-color: rgba(92, 200, 255, 0.6);
@@ -1023,14 +970,18 @@
       width: 100%;
     }
     
-    /* Hero with Typography Focus - 2 Column Layout */
+    /* Hero with Typography Focus - Centered Layout */
     .hero-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: var(--space-xl);
       align-items: center;
+      justify-content: center;
+      text-align: center;
       margin-bottom: 6rem;
-      padding: 0 var(--space-xl);
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .hero {
@@ -1051,51 +1002,26 @@
     .accent-circle {
       position: absolute;
       border-radius: 50%;
-      opacity: 0.08;
+      opacity: 0.06;
       animation: float 6s ease-in-out infinite;
     }
 
     .accent-circle.accent-1 {
-      width: 450px;
-      height: 450px;
+      width: 500px;
+      height: 500px;
       background: linear-gradient(135deg, #5cc8ff, #7c3aed);
-      top: -150px;
-      right: -100px;
+      top: -200px;
+      right: -200px;
       animation-delay: 0s;
     }
 
     .accent-circle.accent-2 {
-      width: 350px;
-      height: 350px;
-      background: linear-gradient(135deg, #7c3aed, #5cc8ff);
-      bottom: -100px;
-      left: -100px;
-      animation-delay: 2s;
-    }
-
-    .accent-blob {
-      position: absolute;
-      opacity: 0.06;
-      animation: float 8s ease-in-out infinite;
-      filter: blur(40px);
-    }
-
-    .accent-blob-1 {
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, #5cc8ff, transparent);
-      top: 0;
-      right: 0;
-      animation-delay: 1s;
-    }
-
-    .accent-blob-2 {
       width: 400px;
       height: 400px;
-      background: radial-gradient(circle, #7c3aed, transparent);
-      bottom: 0;
-      left: 50%;
-      animation-delay: 3s;
+      background: linear-gradient(135deg, #7c3aed, #5cc8ff);
+      bottom: -150px;
+      left: -150px;
+      animation-delay: 2s;
     }
 
     .accent-line {
@@ -1230,27 +1156,13 @@
       }
 
       .hero-container {
-        grid-template-columns: 1fr;
+        max-width: 100%;
         gap: var(--space-m);
-      }
-      
-      .hero-visual {
-        height: 350px;
-      }
-
-      .visual-card-1 {
-        width: 200px;
-        height: 200px;
-      }
-
-      .visual-card-2 {
-        width: 150px;
-        height: 150px;
       }
       
       .hero-name { font-size: 3rem; }
       .hero-role { font-size: 1.3rem; }
-      .hero-tagline { font-size: 1.1rem; }
+      .hero-tagline { font-size: 1.1rem; max-width: 600px; }
       .hero-subtext { margin-bottom: var(--space-m); }
       
       .section-title { font-size: 1.6rem; }
@@ -1269,35 +1181,14 @@
       .nav-logo { font-size: 1rem; }
       
       .hero-container {
-        grid-template-columns: 1fr;
+        max-width: 100%;
         gap: var(--space-m);
-        padding: 0 var(--space-s);
-      }
-
-      .hero-visual {
-        height: 250px;
-        margin-top: var(--space-l);
-      }
-
-      .visual-card-1 {
-        width: 150px;
-        height: 150px;
-      }
-
-      .visual-card-2 {
-        width: 100px;
-        height: 100px;
-      }
-
-      .visual-text {
-        font-size: 0.9rem;
-        width: 150px;
       }
 
       .hero-name { font-size: 2.5rem; margin-bottom: var(--space-xs); }
       .hero-role { font-size: 1.2rem; margin-bottom: var(--space-s); }
-      .hero-tagline { font-size: 1rem; line-height: 1.6; margin-bottom: var(--space-m); }
-      .hero-subtext { gap: var(--space-s); margin-bottom: var(--space-l); }
+      .hero-tagline { font-size: 1rem; line-height: 1.6; margin-bottom: var(--space-m); max-width: 100%; }
+      .hero-subtext { gap: var(--space-s); margin-bottom: var(--space-l); justify-content: center; }
       .hero-subtext span { font-size: 0.9rem; padding: 0.5rem 0.9rem; }
       .hero-cta { gap: var(--space-s); }
       
@@ -1394,8 +1285,6 @@
       <div class="hero-bg-elements">
         <div class="accent-circle accent-1"></div>
         <div class="accent-circle accent-2"></div>
-        <div class="accent-blob accent-blob-1"></div>
-        <div class="accent-blob accent-blob-2"></div>
       </div>
       <div class="hero-container">
         <div class="hero-content">
@@ -1415,11 +1304,6 @@
             <a href="#work" class="btn">Work</a>
             <a href="mailto:satyam@satyamnyk.com" class="btn">Email</a>
           </div>
-        </div>
-        <div class="hero-visual">
-          <div class="visual-element visual-card-1"></div>
-          <div class="visual-element visual-card-2"></div>
-          <div class="visual-text">Building the future<br/>one feature at a time</div>
         </div>
       </div>
     </section>
