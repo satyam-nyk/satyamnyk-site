@@ -37,9 +37,9 @@ body {
   position: fixed;
   top: 0;
   width: 100%;
-  background: rgba(11, 15, 25, 0.7);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-color);
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
   z-index: 1000;
   padding: 1rem 0;
 }
@@ -62,15 +62,7 @@ body {
   font-weight: 700;
   font-size: 1rem;
   transition: var(--transition);
-}
-
-.logo-icon {
-  font-size: 1.3rem;
-}
-
-.logo-text {
   font-family: 'Sora', sans-serif;
-  font-weight: 700;
 }
 
 .nav-logo:hover {
@@ -85,6 +77,7 @@ body {
   border: none;
   cursor: pointer;
   padding: 0.5rem;
+  transition: all 0.3s ease;
 }
 
 .hamburger span {
@@ -93,6 +86,7 @@ body {
   background: var(--accent-purple);
   transition: var(--transition);
   border-radius: 2px;
+  transform-origin: center;
 }
 
 .hamburger.active span:nth-child(1) {
@@ -118,26 +112,71 @@ body {
   font-size: 0.9rem;
   font-weight: 500;
   transition: var(--transition);
-  position: relative;
-}
-
-.nav-links a::before {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent-purple), var(--accent-light));
-  transition: width 0.3s ease;
 }
 
 .nav-links a:hover {
   color: var(--accent-purple);
 }
 
-.nav-links a:hover::before {
-  width: 100%;
+.mobile-nav {
+  display: none;
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+  padding: 1.5rem;
+  flex-direction: column;
+  gap: 1.5rem;
+  z-index: 999;
+  animation: slideDown 0.3s ease;
+}
+
+.mobile-nav.active {
+  display: flex;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-nav a {
+  display: block;
+  padding: 0.75rem 0;
+  color: var(--secondary-text);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+  transition: var(--transition);
+}
+
+.mobile-nav a:last-child {
+  border-bottom: none;
+}
+
+.mobile-nav a:hover {
+  color: var(--accent-purple);
+  padding-left: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+
+  .nav-links {
+    display: none;
+  }
 }
 
 /* Hero Section */
