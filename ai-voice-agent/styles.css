@@ -424,6 +424,7 @@ body {
   align-items: flex-end;
   gap: 0.5rem;
   justify-content: center;
+  min-height: 70px;
 }
 
 .wave {
@@ -449,6 +450,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
 .msg {
@@ -1054,6 +1058,16 @@ body {
 
   .call-content {
     grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+
+  .conversation {
+    max-height: 300px;
+  }
+
+  .waveform {
+    min-height: 60px;
   }
 
   .pipeline-container {
