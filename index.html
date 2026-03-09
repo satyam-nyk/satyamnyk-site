@@ -67,6 +67,37 @@
       }
     }
 
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(20px);
+      }
+    }
+
     body {
       margin: 0;
       padding: 0;
@@ -103,31 +134,40 @@
     }
     
     .hero-name {
-      font-size: 3.5rem;
-      font-weight: 800;
+      font-size: 4.5rem;
+      font-weight: 900;
       letter-spacing: -0.04em;
       margin: 0;
-      background: linear-gradient(135deg, #5cc8ff 0%, #7c3aed 100%);
+      background: linear-gradient(135deg, #5cc8ff 0%, #14b8a6 50%, #7c3aed 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       font-family: 'Sora', sans-serif;
+      line-height: 1.1;
+      animation: fadeInDown 1s ease-out;
     }
     
     .hero-role {
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: var(--color-accent);
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #5cc8ff, #14b8a6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       margin: 0;
       font-family: 'Sora', sans-serif;
+      letter-spacing: 0.05em;
+      animation: fadeInDown 1s ease-out 0.2s both;
     }
     
     .hero-tagline {
-      font-size: 1.2rem;
+      font-size: 1.3rem;
       color: var(--color-text-secondary);
-      max-width: 650px;
-      line-height: 1.7;
-      margin: var(--space-s) 0 var(--space-l) 0;
+      max-width: 700px;
+      line-height: 1.8;
+      margin: var(--space-m) 0 var(--space-l) 0;
+      animation: fadeInUp 1s ease-out 0.4s both;
+      font-weight: 500;
     }
     
     .hero-subtext {
@@ -137,21 +177,30 @@
       flex-wrap: wrap;
       gap: var(--space-m);
       margin-bottom: var(--space-l);
+      justify-content: center;
+      animation: fadeInUp 1s ease-out 0.6s both;
     }
     
     .hero-subtext span {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      background: rgba(92, 200, 255, 0.05);
-      font-size: 0.9rem;
+      padding: 0.6rem 1.2rem;
+      border: 1px solid rgba(92, 200, 255, 0.3);
+      border-radius: 20px;
+      background: rgba(92, 200, 255, 0.08);
+      font-size: 0.95rem;
       font-weight: 500;
       color: var(--color-text-secondary);
-      transition: var(--transition);
+      transition: all 0.3s ease;
       backdrop-filter: blur(10px);
+    }
+    
+    .hero-subtext span:hover {
+      border-color: rgba(92, 200, 255, 0.6);
+      background: rgba(92, 200, 255, 0.15);
+      color: #5cc8ff;
+      transform: translateY(-2px);
     }
 
     .hero-subtext span:hover {
@@ -916,7 +965,7 @@
       width: 100%;
     }
     
-    /* Hero with Picture */
+    /* Hero with Typography Focus */
     .hero-container {
       display: flex;
       gap: var(--space-l);
@@ -924,105 +973,91 @@
       margin-bottom: 5rem;
       flex-direction: row-reverse;
     }
+
+    .hero-container.full-width {
+      flex-direction: column;
+      gap: var(--space-xl);
+      align-items: center;
+      text-align: center;
+      max-width: 1000px;
+      margin: 0 auto 6rem;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-bg-elements {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .accent-circle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.1;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .accent-circle.accent-1 {
+      width: 400px;
+      height: 400px;
+      background: linear-gradient(135deg, #5cc8ff, #7c3aed);
+      top: -100px;
+      right: -100px;
+      animation-delay: 0s;
+    }
+
+    .accent-circle.accent-2 {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, #7c3aed, #5cc8ff);
+      bottom: -50px;
+      left: -50px;
+      animation-delay: 2s;
+    }
+
+    .accent-line {
+      position: absolute;
+      background: linear-gradient(90deg, transparent, #5cc8ff, transparent);
+      opacity: 0.15;
+      animation: slideRight 8s ease-in-out infinite;
+    }
+
+    .accent-line-1 {
+      width: 100%;
+      height: 1px;
+      top: 20%;
+      left: -100%;
+    }
+
+    .accent-line-2 {
+      width: 100%;
+      height: 1px;
+      bottom: 40%;
+      left: -100%;
+      animation-delay: 4s;
+    }
+
+    @keyframes slideRight {
+      0% { left: -100%; }
+      50% { left: 100%; }
+      100% { left: -100%; }
+    }
     
     .hero-content {
       flex: 1;
       display: flex;
       flex-direction: column;
       gap: var(--space-m);
-    }
-    
-    .hero-image-container {
-      flex: 0 0 200px;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-s);
-      align-items: center;
-    }
-    
-    .hero-image {
-      width: 200px;
-      height: 200px;
-      border-radius: 16px;
-      background: 
-        radial-gradient(circle at 20% 50%, rgba(92, 200, 255, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
-        var(--color-bg-secondary);
-      border: 1px solid rgba(92, 200, 255, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 3rem;
-      box-shadow: 
-        0 8px 32px rgba(92, 200, 255, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08),
-        0 0 80px rgba(92, 200, 255, 0.12),
-        inset 0 0 30px rgba(92, 200, 255, 0.08);
-      overflow: hidden;
-      animation: glow 3s ease-in-out infinite;
       position: relative;
-      backdrop-filter: blur(10px);
-    }
-
-    .hero-image::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-image: 
-        radial-gradient(circle at 15% 20%, rgba(92, 200, 255, 0.08) 2px, transparent 2px),
-        radial-gradient(circle at 75% 60%, rgba(124, 58, 237, 0.06) 1.5px, transparent 1.5px),
-        radial-gradient(circle at 90% 25%, rgba(92, 200, 255, 0.05) 1px, transparent 1px);
-      background-size: 120px 120px, 150px 150px, 100px 100px;
-      opacity: 0.6;
-      pointer-events: none;
-      border-radius: 16px;
       z-index: 1;
-      animation: meshShift 8s linear infinite;
-    }
-
-    @keyframes meshShift {
-      0% {
-        background-position: 0 0, 0 0, 0 0;
-      }
-      100% {
-        background-position: 120px 0, 0 150px, 100px 100px;
-      }
-    }
-
-    .hero-image::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: 
-        radial-gradient(ellipse at center, rgba(92, 200, 255, 0.03) 0%, transparent 50%),
-        radial-gradient(ellipse at center, transparent 40%, rgba(11, 15, 25, 0.2) 100%);
-      pointer-events: none;
-      border-radius: 16px;
-      z-index: 2;
-      opacity: 0.7;
-      backdrop-filter: blur(2px);
-    }
-    
-    .hero-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      display: block;
-      border-radius: 15px;
-      mix-blend-mode: overlay;
-      opacity: 1;
-      filter: contrast(1.25) saturate(1.15) brightness(1.6);
-      position: relative;
-      z-index: 3;
-      mask-image: radial-gradient(circle at center, white 0%, white 70%, transparent 100%);
-      -webkit-mask-image: radial-gradient(circle at center, white 0%, white 70%, transparent 100%);
     }
 
     /* Hamburger Menu */
@@ -1123,19 +1158,11 @@
         gap: var(--space-m);
       }
       
-      .hero-image-container {
-        flex: 0 0 120px;
-        align-items: center;
-        width: auto;
-      }
-
-      .hero-image {
-        width: 120px;
-        height: 120px;
-      }
+      .hero-name { font-size: 3rem; }
+      .hero-role { font-size: 1.3rem; }
+      .hero-tagline { font-size: 1.1rem; }
+      .hero-subtext { margin-bottom: var(--space-m); }
       
-      .hero-name { font-size: 2.2rem; }
-      .hero-tagline { font-size: 1rem; }
       .section-title { font-size: 1.6rem; }
       .contact-title { font-size: 2rem; }
       .contact-desc { font-size: 1rem; }
@@ -1156,22 +1183,11 @@
         gap: var(--space-m);
       }
 
-      .hero-image-container {
-        flex: 0 0 100px;
-        align-items: center;
-        width: auto;
-      }
-      
-      .hero-image {
-        width: 100px;
-        height: 100px;
-      }
-
-      .hero-name { font-size: 1.8rem; margin-bottom: var(--space-xs); }
+      .hero-name { font-size: 2.5rem; margin-bottom: var(--space-xs); }
       .hero-role { font-size: 1.2rem; margin-bottom: var(--space-s); }
-      .hero-tagline { font-size: 0.95rem; line-height: 1.6; margin-bottom: var(--space-l); }
+      .hero-tagline { font-size: 1rem; line-height: 1.6; margin-bottom: var(--space-m); }
       .hero-subtext { gap: var(--space-s); margin-bottom: var(--space-l); }
-      .hero-subtext span { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+      .hero-subtext span { font-size: 0.9rem; padding: 0.5rem 0.9rem; }
       .hero-cta { gap: var(--space-s); }
       
       .section-title { font-size: 1.3rem; margin-bottom: var(--space-s); }
@@ -1264,19 +1280,19 @@
   <main>
     <!-- Hero Section -->
     <section class="hero" id="hero">
-      <div class="hero-container">
-        <div class="hero-image-container">
-          <div class="hero-image" id="pictureContainer">
-            <img src="./assets/profile.png" alt="Satyam Nayak" style="width: 100%; height: 100%; object-fit: cover;">
-          </div>
-        </div>
-
+      <div class="hero-bg-elements">
+        <div class="accent-circle accent-1"></div>
+        <div class="accent-circle accent-2"></div>
+        <div class="accent-line accent-line-1"></div>
+        <div class="accent-line accent-line-2"></div>
+      </div>
+      <div class="hero-container full-width">
         <div class="hero-content">
           <h1 class="hero-name">Satyam Nayak</h1>
           <div class="hero-role">Technical Product Manager</div>
           <p class="hero-tagline">I design and scale platform products, AI-driven systems, and integration-heavy workflows. Focused on 0 → 1 builds, growth systems, and metrics-driven execution.</p>
           <div class="hero-subtext">
-            <span>5+ Years</span>
+            <span>5+ Years Experience</span>
             <span>Platform & Systems</span>
             <span>Product Leadership</span>
             <span>AI Integration</span>
