@@ -45,64 +45,64 @@ const conversationFlow = [
   {
     type: 'customer',
     text: 'Hi, is the apartment available?',
-    delay: 800
+    delay: 1500
   },
   {
     type: 'ai',
     text: 'Thank you for calling! Welcome to our property consultation. Yes, we have some great options available. To help me find the perfect match for you, I\'d like to ask a few quick questions.',
-    delay: 3000
+    delay: 4500
   },
   {
     type: 'customer',
     text: 'Sure, go ahead.',
-    delay: 5000
-  },
-  {
-    type: 'ai',
-    text: 'What is your budget range for the property?',
-    delay: 6000
-  },
-  {
-    type: 'customer',
-    text: 'Around 80 to 90 lakhs.',
     delay: 7500
   },
   {
     type: 'ai',
-    text: 'Excellent! And which location are you interested in? We have properties in Wakad, Hinjewadi, and Baner.',
+    text: 'What is your budget range for the property?',
     delay: 9500
   },
   {
     type: 'customer',
+    text: 'Around 80 to 90 lakhs.',
+    delay: 12000
+  },
+  {
+    type: 'ai',
+    text: 'Excellent! And which location are you interested in? We have properties in Wakad, Hinjewadi, and Baner.',
+    delay: 15000
+  },
+  {
+    type: 'customer',
     text: 'Wakad would be perfect. How many bedrooms are available?',
-    delay: 11000
+    delay: 18000
   },
   {
     type: 'ai',
     text: 'In your budget at Wakad, we have beautiful 2 and 3 BHK options with modern amenities, parking, and a swimming pool.',
-    delay: 13500
+    delay: 21500
   },
   {
     type: 'customer',
     text: 'That sounds great! Can I schedule a site visit?',
-    delay: 15000
+    delay: 24500
   },
   {
     type: 'ai',
     text: 'Absolutely! I\'m connecting you with a specialist who will schedule your visit at your convenience. They\'ll also send you the property brochure.',
-    delay: 17000
+    delay: 28000
   },
   {
     type: 'system',
     text: '✓ Lead Qualified & Transferred to Specialist',
-    delay: 19000
+    delay: 31000
   }
 ];
 
 // Lead panel updates with more realistic data
 const leadPanelUpdates = [
   {
-    delay: 1500,
+    delay: 2500,
     data: {
       intent: 'Property Inquiry',
       budget: '—',
@@ -111,7 +111,7 @@ const leadPanelUpdates = [
     }
   },
   {
-    delay: 5000,
+    delay: 8000,
     data: {
       intent: 'Property Inquiry',
       budget: '—',
@@ -120,7 +120,7 @@ const leadPanelUpdates = [
     }
   },
   {
-    delay: 8000,
+    delay: 13000,
     data: {
       intent: 'Active Buyer',
       budget: '₹80-90L',
@@ -129,7 +129,7 @@ const leadPanelUpdates = [
     }
   },
   {
-    delay: 12000,
+    delay: 19000,
     data: {
       intent: 'Active Buyer',
       budget: '₹80-90L',
@@ -138,7 +138,7 @@ const leadPanelUpdates = [
     }
   },
   {
-    delay: 15500,
+    delay: 24000,
     data: {
       intent: 'Ready to Visit',
       budget: '₹80-90L',
@@ -269,7 +269,7 @@ function simulateConversation() {
     
     // Clear timer when done
     clearInterval(timerInterval);
-  }, 19500);
+  }, 32000);
 }
 
 // Update lead panel data
