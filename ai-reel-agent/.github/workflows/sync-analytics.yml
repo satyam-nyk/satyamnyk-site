@@ -1,0 +1,48 @@
+name: Sync Instagram Analytics
+
+on:
+  schedule:
+    # Run 3x daily: 8 AM, 2 PM, 8 PM UTC (1:30 PM, 7:30 PM, 1:30 AM IST)
+    - cron: '0 8 * * *'
+    - cron: '0 14 * * *'
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  sync-analytics:
+    runs-on: ubuntu-latest
+    name: Sync Post Analytics from Instagram
+
+    steps:
+      - name: Get current date
+        id: date
+        run: echo "date=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
+      - name: Log trigger information
+        run: |
+          echo "Analytics sync triggered at: ${{ steps.date.outputs.date }}"
+
+      - name: Sync Analytics Webhook
+        id: sync
+        run: |
+          echo "Sending analytics sync request..."
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: GitHub-Actions" \
+            "${{ secrets.WEBHOOK_URL }}/sync-analytics")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Sync failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+          echo "✅ Analytics sync completed successfully at ${{ steps.date.outputs.date }}"

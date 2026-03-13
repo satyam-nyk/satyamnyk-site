@@ -243,14 +243,16 @@ require_once dirname(__DIR__) . '/dashboard-config.php';
                                     <th>Date</th>
                                     <th>Topic</th>
                                     <th>Status</th>
-                                    <th>Views</th>
+                                    <th>Reach</th>
                                     <th>Likes</th>
                                     <th>Comments</th>
+                                    <th>Shares</th>
                                     <th>Eng%</th>
+                                    <th>Link</th>
                                 </tr>
                             </thead>
                             <tbody id="history-body">
-                                <tr><td colspan="7">Loading history...</td></tr>
+                                <tr><td colspan="9">Loading history...</td></tr>
                             </tbody>
                         </table>
                         <div class="history-pagination">

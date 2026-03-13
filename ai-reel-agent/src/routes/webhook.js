@@ -1,5 +1,5 @@
 import express from 'express';
-import { STATUS, ERROR_MESSAGES } from '../config/constants.js';
+import { STATUS, ERROR_MESSAGES, INSTAGRAM_CONFIG } from '../config/constants.js';
 
 /**
  * Webhook Routes
@@ -94,10 +94,11 @@ export function createWebhookRouter(
       // Step 4: Post to Instagram
       console.log('[Webhook] Step 4: Posting to Instagram...');
       const caption = `${scriptData.script}\n\n${INSTAGRAM_CONFIG.HASHTAGS.slice(0, 10).join(' ')}`;
+      const instagramVideoInput = videoData.videoUrl || videoData.videoPath;
 
       let instagramResult = null;
       try {
-        instagramResult = await instagramService.postReel(videoData.videoPath, caption);
+        instagramResult = await instagramService.postReel(instagramVideoInput, caption);
       } catch (error) {
         console.warn('[Webhook] Instagram posting failed:', error.message);
         // Continue even if Instagram fails, we'll store the draft
@@ -274,7 +275,8 @@ export function createWebhookRouter(
 
       // Post to Instagram
       const caption = `${script.script}\n\n${INSTAGRAM_CONFIG.HASHTAGS.slice(0, 10).join(' ')}`;
-      const instagramResult = await instagramService.postReel(video.videoPath, caption);
+      const instagramVideoInput = video.videoUrl || video.videoPath;
+      const instagramResult = await instagramService.postReel(instagramVideoInput, caption);
 
       if (!instagramResult) {
         return res.status(500).json({
@@ -351,8 +353,8 @@ What do you think? Drop your thoughts! 👇`;
         });
 
         if (cachedVideo) {
-          testVideoPath = `./videos/${cachedVideo.video_file}`;
-          console.log('[Webhook] Using cached video:', cachedVideo.video_file);
+          testVideoPath = cachedVideo.video_url || `./videos/${cachedVideo.video_file}`;
+          console.log('[Webhook] Using cached video:', cachedVideo.video_file, 'URL:', cachedVideo.video_url);
         }
       } catch (err) {
         console.warn('[Webhook] Could not find cached video:', err.message);
@@ -407,8 +409,74 @@ What do you think? Drop your thoughts! 👇`;
     }
   });
 
+  /**
+   * POST /api/webhook/sync-analytics
+   * Fetch latest insights from Instagram for all posted reels and update DB.
+   * Designed to run 3x per day via GitHub Actions.
+   */
+  router.post('/sync-analytics', verifyWebhookSignature, async (req, res) => {
+    const startTime = Date.now();
+    try {
+      console.log('[Webhook] Starting analytics sync...');
+
+      // Get all posted reels with an Instagram post ID (last 90 days)
+      const posts = await new Promise((resolve, reject) => {
+        database.db.all(
+          `SELECT id, date, instagram_post_id FROM daily_posts
+           WHERE status = 'posted' AND instagram_post_id IS NOT NULL AND instagram_post_id != ''
+           AND date >= date('now', '-90 days')
+           ORDER BY date DESC`,
+          (err, rows) => { if (err) reject(err); else resolve(rows || []); }
+        );
+      });
+
+      if (!posts.length) {
+        return res.json({ success: true, message: 'No posts to sync', updated: 0 });
+      }
+
+      console.log(`[Webhook] Syncing analytics for ${posts.length} posts...`);
+
+      let updated = 0;
+      let failed = 0;
+      const results = [];
+
+      for (const post of posts) {
+        try {
+          const analytics = await instagramService.getPostAnalytics(post.instagram_post_id);
+          await database.updatePostAnalytics(
+            post.instagram_post_id,
+            analytics.views,
+            analytics.likes,
+            analytics.comments,
+            analytics.shares
+          );
+          updated++;
+          results.push({ postId: post.instagram_post_id, date: post.date, status: 'synced', data: analytics });
+          console.log(`[Webhook] Synced ${post.date} (${post.instagram_post_id}): reach=${analytics.views} likes=${analytics.likes}`);
+        } catch (err) {
+          failed++;
+          results.push({ postId: post.instagram_post_id, date: post.date, status: 'failed', error: err.message });
+          console.warn(`[Webhook] Failed to sync ${post.instagram_post_id}:`, err.message);
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      console.log(`[Webhook] Analytics sync complete: ${updated} updated, ${failed} failed in ${duration}ms`);
+
+      return res.json({
+        success: true,
+        message: `Analytics sync complete`,
+        updated,
+        failed,
+        total: posts.length,
+        duration,
+        results,
+      });
+    } catch (error) {
+      console.error('[Webhook] Analytics sync error:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   return router;
 }
-
-// Import for INSTAGRAM_CONFIG
-import { INSTAGRAM_CONFIG } from '../config/constants.js';

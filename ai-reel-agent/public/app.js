@@ -345,24 +345,40 @@ async function loadHistory() {
   }
 }
 
+function instagramShortcode(postId) {
+  if (!postId) return null;
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+  let n = BigInt(postId);
+  let s = '';
+  while (n > 0n) { s = alpha[Number(n % 64n)] + s; n /= 64n; }
+  return s;
+}
+
 function renderHistory(rows) {
   const body = document.getElementById('history-body');
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="7">No posts found.</td></tr>';
+    body.innerHTML = '<tr><td colspan="9">No posts found.</td></tr>';
     return;
   }
 
-  body.innerHTML = rows.map((row) => `
+  body.innerHTML = rows.map((row) => {
+    const sc = instagramShortcode(row.instagram_post_id);
+    const link = sc
+      ? `<a href="https://www.instagram.com/reel/${sc}/" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View on Instagram">↗ View</a>`
+      : '--';
+    return `
     <tr onclick="showPostDetail(${row.id})">
       <td>${formatDate(row.date)}</td>
-      <td>${escapeHtml((row.topic || '--').slice(0, 56))}</td>
+      <td>${escapeHtml((row.topic || '--').slice(0, 50))}</td>
       <td><span class="table-status ${row.status || 'pending'}">${(row.status || 'pending').toUpperCase()}</span></td>
       <td>${formatNumber(row.views || 0)}</td>
       <td>${formatNumber(row.likes || 0)}</td>
       <td>${formatNumber(row.comments || 0)}</td>
+      <td>${formatNumber(row.shares || 0)}</td>
       <td>${(row.engagement_rate || 0).toFixed(2)}%</td>
-    </tr>
-  `).join('');
+      <td>${link}</td>
+    </tr>`;
+  }).join('');
 }
 
 async function showPostDetail(id) {
@@ -378,8 +394,8 @@ async function showPostDetail(id) {
       <p><strong>Date:</strong> ${formatDate(p.date)}</p>
       <p><strong>Status:</strong> ${(p.status || 'pending').toUpperCase()}</p>
       <p><strong>Method:</strong> ${escapeHtml(p.generation_method || '--')}</p>
-      <p><strong>Instagram Post ID:</strong> ${escapeHtml(p.instagram_post_id || '--')}</p>
-      <p><strong>Views:</strong> ${formatNumber(p.views || 0)} | <strong>Likes:</strong> ${formatNumber(p.likes || 0)}</p>
+      ${(() => { const sc = instagramShortcode(p.instagram_post_id); return sc ? `<p><strong>Instagram:</strong> <a href="https://www.instagram.com/reel/${sc}/" target="_blank" rel="noopener">View Reel ↗</a></p>` : `<p><strong>Instagram Post ID:</strong> ${escapeHtml(p.instagram_post_id || '--')}</p>`; })()}
+      <p><strong>Reach:</strong> ${formatNumber(p.views || 0)} | <strong>Likes:</strong> ${formatNumber(p.likes || 0)}</p>
       <p><strong>Comments:</strong> ${formatNumber(p.comments || 0)} | <strong>Shares:</strong> ${formatNumber(p.shares || 0)}</p>
       <p><strong>Engagement:</strong> ${(p.engagement_rate || 0).toFixed(2)}%</p>
       <h4>Script</h4>
