@@ -66,12 +66,17 @@
     .msg { margin-top: 12px; min-height: 20px; font-size: 0.9rem; color: var(--danger); }
     .links { margin-top: 16px; text-align: center; }
     .links a { color: var(--accent2); text-decoration: none; }
+    .help { margin-top: 6px; color: var(--muted); font-size: 0.82rem; }
   </style>
 </head>
 <body>
   <form class="panel" id="login-form">
     <h1>Secure Dashboard Login</h1>
     <p>Only authorized users can access reel analytics and posting history.</p>
+
+    <label for="apiBase">Backend API Base URL</label>
+    <input id="apiBase" name="apiBase" type="url" placeholder="https://your-app.up.railway.app" required />
+    <div class="help">Use your deployed API host. This is stored in your browser.</div>
 
     <label for="username">Username</label>
     <input id="username" name="username" type="text" autocomplete="username" required />
@@ -81,32 +86,51 @@
 
     <button type="submit">Access Dashboard</button>
     <div class="msg" id="msg"></div>
-    <div class="links"><a href="/reel-agent">Back to public microsite</a></div>
+    <div class="links"><a href="microsite.html">Back to public microsite</a></div>
   </form>
 
   <script>
     const form = document.getElementById('login-form');
     const msg = document.getElementById('msg');
+    const qs = new URLSearchParams(window.location.search);
+    const queryApi = qs.get('api');
+    const savedApi = localStorage.getItem('reel-api-base');
+    form.apiBase.value = (queryApi || savedApi || window.location.origin).replace(/\/$/, '');
+
+    function sanitizeApi(v) {
+      return (v || '').trim().replace(/\/$/, '');
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       msg.textContent = '';
 
+      const apiBase = sanitizeApi(form.apiBase.value);
       const username = form.username.value.trim();
       const password = form.password.value;
+      localStorage.setItem('reel-api-base', apiBase);
 
-      const res = await fetch('/dashboard/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+      try {
+        const res = await fetch(`${apiBase}/dashboard/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
-        msg.textContent = data.error || 'Login failed';
-        return;
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          msg.textContent = data.error || 'Login failed';
+          return;
+        }
+
+        window.location.href = `${apiBase}/dashboard`;
+      } catch (_err) {
+        msg.textContent = 'Cross-site login blocked by browser. Opening backend login...';
+        setTimeout(() => {
+          window.location.href = `${apiBase}/dashboard/login`;
+        }, 600);
       }
-      window.location.href = '/dashboard';
     });
   </script>
 </body>

@@ -3,70 +3,108 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Reel Agent - Automated Content Engine</title>
-  <link rel="stylesheet" href="/microsite.css" />
+  <meta name="description" content="AI Reel Agent automates trend discovery, script generation, voice + visual reel production, publishing, and analytics optimization." />
+  <title>AI Reel Agent | Automated Reels Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="microsite.css" />
 </head>
 <body>
+  <div class="backdrop-grid" aria-hidden="true"></div>
+
   <header class="hero">
-    <nav class="nav">
+    <nav class="nav shell">
       <div class="brand">AI Reel Agent</div>
       <div class="actions">
-        <a href="/dashboard/login" class="btn btn-outline">Dashboard Login</a>
-        <a href="/" class="btn btn-link">API Home</a>
+        <a href="dashboard-login.html" class="btn btn-outline" data-login-link>Dashboard Login</a>
+        <a href="../.." class="btn btn-link">Portfolio</a>
       </div>
     </nav>
-    <div class="hero-content">
-      <h1>Automated Instagram Reels System</h1>
-      <p>
-        End-to-end reel operations from trending-topic research to scripted narration,
-        motion graphics, scheduled posting, and analytics feedback loops.
+
+    <div class="hero-content shell reveal">
+      <span class="eyebrow">Public Product Microsite</span>
+      <h1>From Global Trend to Published Reel in One Automated Flow</h1>
+      <p class="hero-copy">
+        AI Reel Agent handles research, neutral script building, narration, motion visuals,
+        scheduled publishing, and performance analytics so the system improves with every post.
       </p>
       <div class="hero-cta">
-        <a href="/dashboard/login" class="btn btn-solid">Open Secure Analytics Dashboard</a>
+        <a href="dashboard-login.html" class="btn btn-solid" data-login-link>Open Secure Analytics Dashboard</a>
+        <a href="#snapshot" class="btn btn-soft">View Live Snapshot</a>
+      </div>
+      <div class="hero-trust">
+        <span>1080x1920 vertical output</span>
+        <span>Automated posting pipeline</span>
+        <span>Performance feedback loop</span>
       </div>
     </div>
   </header>
 
-  <main>
-    <section class="grid section">
-      <article class="card">
-        <h3>How It Works</h3>
-        <ol>
-          <li>Research recent news and social trends.</li>
-          <li>Generate unbiased short-form script with hooks and structured slides.</li>
-          <li>Build voice + subtitles + infographic visuals in vertical format.</li>
-          <li>Upload and publish via Instagram Graph API.</li>
-          <li>Track content performance and optimize future topics.</li>
-        </ol>
-      </article>
-      <article class="card">
-        <h3>Core Capabilities</h3>
-        <ul>
-          <li>Auto topic research from recent headlines</li>
-          <li>Balanced, non-partisan script generation</li>
-          <li>Human-like voice synthesis pipeline</li>
-          <li>Automated posting & retry-safe workflow</li>
-          <li>Historical insights and engagement analytics</li>
-        </ul>
-      </article>
+  <main class="shell">
+    <section class="section reveal">
+      <div class="section-head">
+        <h2>How The Engine Works</h2>
+        <p>Each stage is built for reliability, neutrality, and repeatable growth.</p>
+      </div>
+      <div class="pipeline-grid">
+        <article class="step-card"><span>01</span><h3>Trend Sourcing</h3><p>Monitors fresh global headlines and surfaces high-signal topics.</p></article>
+        <article class="step-card"><span>02</span><h3>Script Intelligence</h3><p>Generates short-form, non-partisan scripts with structured hooks.</p></article>
+        <article class="step-card"><span>03</span><h3>Reel Generation</h3><p>Builds voiceover, subtitles, graphics, and vertical motion scenes.</p></article>
+        <article class="step-card"><span>04</span><h3>Publish + Track</h3><p>Publishes with retries, then tracks outcomes for strategy feedback.</p></article>
+      </div>
     </section>
 
-    <section class="section">
-      <h2>Live System Snapshot</h2>
+    <section class="section reveal">
+      <div class="feature-split">
+        <article class="card feature-card">
+          <h3>Core Capabilities</h3>
+          <ul class="clean-list">
+            <li>Live topic research from current headlines</li>
+            <li>Balanced script generation with factual framing</li>
+            <li>Human-like TTS with subtitle-ready story pacing</li>
+            <li>Automated upload and Instagram publish workflow</li>
+            <li>Historical analytics and recommendation loop</li>
+          </ul>
+        </article>
+        <article class="card feature-card accent">
+          <h3>Built For Operators</h3>
+          <p>Public users can inspect system health. Authorized users can access the secure analytics dashboard for post history, trend insights, and strategy recommendations.</p>
+          <a href="dashboard-login.html" class="text-link" data-login-link>Enter secure dashboard</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section reveal" id="snapshot">
+      <div class="section-head">
+        <h2>Live System Snapshot</h2>
+        <p>Public summary metrics from the configured backend.</p>
+      </div>
+
+      <div class="api-config card">
+        <label for="api-base">Backend API Base URL</label>
+        <div class="api-config-row">
+          <input id="api-base" type="url" placeholder="https://your-app.up.railway.app" />
+          <button id="save-api" class="btn btn-outline" type="button">Save Endpoint</button>
+        </div>
+        <p class="api-help">Set this once. Login links and public stats will use this endpoint.</p>
+      </div>
+
       <div class="stats" id="stats">
         <div class="stat"><span class="k" id="k-posts">--</span><span class="l">Total Posts</span></div>
         <div class="stat"><span class="k" id="k-views">--</span><span class="l">Total Views</span></div>
         <div class="stat"><span class="k" id="k-eng">--</span><span class="l">Avg Engagement</span></div>
         <div class="stat"><span class="k" id="k-method">--</span><span class="l">Top Gen Method</span></div>
       </div>
-      <p class="note">Public page shows summary only. Detailed post-level insights are available in the protected dashboard.</p>
+
+      <p class="note">Public page shows summary only. Deep post-level insights are available in the protected dashboard.</p>
     </section>
   </main>
 
   <footer>
-    <p>AI Reel Agent • Public Microsite</p>
+    <p>AI Reel Agent • Public Microsite • satyamnyk.com</p>
   </footer>
 
-  <script src="/microsite.js"></script>
+  <script src="microsite.js"></script>
 </body>
 </html>

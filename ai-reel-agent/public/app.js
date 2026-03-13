@@ -1,4 +1,12 @@
-const API_BASE_URL = '/dashboard/api/dashboard-data';
+function resolveApiBase() {
+  const qs = new URLSearchParams(window.location.search);
+  const queryApi = qs.get('api');
+  const savedApi = localStorage.getItem('reel-api-base');
+  return (queryApi || savedApi || window.location.origin).replace(/\/$/, '');
+}
+
+const API_BASE = resolveApiBase();
+const API_BASE_URL = `${API_BASE}/dashboard/api/dashboard-data`;
 const REFRESH_INTERVAL = 30000;
 
 let engagementChart = null;
@@ -9,9 +17,9 @@ let currentLimit = 20;
 let currentTotal = 0;
 
 async function ensureSession() {
-  const response = await fetch('/dashboard/api/auth/session');
+  const response = await fetch(`${API_BASE}/dashboard/api/auth/session`, { credentials: 'include' });
   if (!response.ok) {
-    window.location.href = '/dashboard/login';
+    window.location.href = `dashboard-login.html?api=${encodeURIComponent(API_BASE)}`;
     return false;
   }
   return true;
@@ -32,9 +40,9 @@ async function initDashboard() {
 
 async function updateDashboard() {
   try {
-    const response = await fetch(API_BASE_URL);
+    const response = await fetch(API_BASE_URL, { credentials: 'include' });
     if (response.status === 401) {
-      window.location.href = '/dashboard/login';
+      window.location.href = `dashboard-login.html?api=${encodeURIComponent(API_BASE)}`;
       return;
     }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -312,9 +320,9 @@ async function loadHistory() {
   const url = `${API_BASE_URL}/posts?limit=${currentLimit}&offset=${currentOffset}&status=${encodeURIComponent(status)}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { credentials: 'include' });
     if (response.status === 401) {
-      window.location.href = '/dashboard/login';
+      window.location.href = `dashboard-login.html?api=${encodeURIComponent(API_BASE)}`;
       return;
     }
 
@@ -356,7 +364,7 @@ function renderHistory(rows) {
 
 async function showPostDetail(id) {
   try {
-    const response = await fetch(`${API_BASE_URL}/posts/${id}`);
+    const response = await fetch(`${API_BASE_URL}/posts/${id}`, { credentials: 'include' });
     const payload = await response.json();
     if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to load post detail');
 
@@ -400,12 +408,13 @@ async function triggerManualPost() {
     btn.disabled = true;
     btn.textContent = 'Posting...';
 
-    const response = await fetch('/api/webhook/manual-post', {
+    const response = await fetch(`${API_BASE}/api/webhook/manual-post`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${getWebhookSecret()}`,
       },
+      credentials: 'include',
     });
 
     const data = await response.json();
@@ -423,8 +432,8 @@ async function triggerManualPost() {
 }
 
 async function logoutDashboard() {
-  await fetch('/dashboard/api/auth/logout', { method: 'POST' });
-  window.location.href = '/dashboard/login';
+  await fetch(`${API_BASE}/dashboard/api/auth/logout`, { method: 'POST', credentials: 'include' });
+  window.location.href = `dashboard-login.html?api=${encodeURIComponent(API_BASE)}`;
 }
 
 function getWebhookSecret() {
