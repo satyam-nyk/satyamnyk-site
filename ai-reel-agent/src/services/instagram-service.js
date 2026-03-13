@@ -205,11 +205,13 @@ class InstagramService {
 
     // --- Attempt 1: full /insights endpoint ---
     try {
+      // Reels metrics: reach (unique accounts), likes, comments, shares, saved, total_interactions
+      // Note: impressions and plays are deprecated/unsupported for REELS media product type in v22+
       const response = await axios.get(
         `${this.baseURL}/${postId}/insights`,
         {
           params: {
-            metric: 'impressions,likes,comments,shares,saved,plays',
+            metric: 'reach,likes,comments,shares,saved,total_interactions',
             access_token: this.accessToken,
           },
           timeout: this.timeout,
@@ -227,12 +229,12 @@ class InstagramService {
 
       return {
         postId,
-        views: insights.impressions || 0,
+        views: insights.reach || 0,
         likes: insights.likes || 0,
         comments: insights.comments || 0,
         shares: insights.shares || 0,
         saves: insights.saved || 0,
-        plays: insights.plays || 0,
+        plays: insights.total_interactions || 0,
         retrievedAt: new Date().toISOString(),
       };
     } catch (insightsError) {
