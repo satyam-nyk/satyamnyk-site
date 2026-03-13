@@ -16,10 +16,12 @@ This PHP fallback lets the dashboard work on Hostinger shared hosting without a 
 - `ai-reel-agent/public/dashboard.php`
 - `ai-reel-agent/public/dashboard-login.php`
 - `ai-reel-agent/public/dashboard-api.php`
+- `ai-reel-agent/public/dashboard-diagnostics.php`
 
 ## URLs
 
 - Public microsite: `https://your-domain.com/ai-reel-agent/public/microsite.html`
+- Diagnostics: `https://your-domain.com/ai-reel-agent/public/dashboard-diagnostics.php`
 - Dashboard login: `https://your-domain.com/ai-reel-agent/public/dashboard-login.php`
 - Dashboard: `https://your-domain.com/ai-reel-agent/public/dashboard.php`
 
@@ -28,3 +30,4 @@ This PHP fallback lets the dashboard work on Hostinger shared hosting without a 
 - This PHP version reads analytics from `database.sqlite`.
 - Manual posting from shared hosting is disabled.
 - If your host does not support `pdo_sqlite`, this fallback will not work and you will need MySQL/PHP migration or a VPS.
+- Open the diagnostics URL first after upload to verify PHP, sessions, and SQLite support.
