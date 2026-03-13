@@ -2,6 +2,7 @@ import axios from 'axios';
 import { API_LIMITS, INSTAGRAM_CONFIG } from '../config/constants.js';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * InstagramService - Handles Instagram Graph API interactions
@@ -15,7 +16,7 @@ class InstagramService {
     this.accessToken = accessToken;
     this.businessAccountId = businessAccountId;
     this.apiLimiter = apiLimiter;
-    this.baseURL = 'https://graph.instagram.com/v18.0';
+    this.baseURL = 'https://graph.facebook.com/v18.0';
     this.timeout = API_LIMITS.INSTAGRAM.TIMEOUT;
   }
 
@@ -30,9 +31,18 @@ class InstagramService {
         throw new Error('Video path and caption are required');
       }
 
-      // Check if video exists
-      if (!fs.existsSync(videoPath)) {
-        console.warn(`[InstagramService] Video file not found: ${videoPath}`);
+      const isRemoteUrl = typeof videoPath === 'string' && /^https?:\/\//i.test(videoPath);
+
+      if (!isRemoteUrl) {
+        const resolvedVideoPath = this.resolveVideoPath(videoPath);
+        if (!resolvedVideoPath || !fs.existsSync(resolvedVideoPath)) {
+          console.warn(`[InstagramService] Video file not found: ${videoPath}`);
+          return null;
+        }
+
+        console.warn(
+          '[InstagramService] Local file upload is not supported by this Reels flow. Provide a public video URL.'
+        );
         return null;
       }
 
@@ -47,21 +57,16 @@ class InstagramService {
         caption = caption.substring(0, INSTAGRAM_CONFIG.CAPTION_MAX_LENGTH);
       }
 
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append('file', fs.createReadStream(videoPath));
-      formData.append('media_type', 'REELS');
-      formData.append('caption', caption);
-      formData.append('access_token', this.accessToken);
-
       // Step 1: Create media container
       const containerResponse = await axios.post(
         `${this.baseURL}/${this.businessAccountId}/media`,
-        formData,
         {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+          media_type: 'REELS',
+          video_url: videoPath,
+          caption,
+          access_token: this.accessToken,
+        },
+        {
           timeout: this.timeout,
         }
       );
@@ -99,9 +104,32 @@ class InstagramService {
         postedAt: new Date().toISOString(),
       };
     } catch (error) {
+      if (error.response?.data) {
+        console.error('[InstagramService] API error details:', JSON.stringify(error.response.data));
+      }
       console.error('[InstagramService] Error posting reel:', error.message);
       throw error;
     }
+  }
+
+  resolveVideoPath(videoPath) {
+    if (!videoPath) {
+      return null;
+    }
+
+    if (fs.existsSync(videoPath)) {
+      return videoPath;
+    }
+
+    if (path.isAbsolute(videoPath)) {
+      return videoPath;
+    }
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const projectRoot = path.resolve(__dirname, '../..');
+    const normalizedRelativePath = videoPath.replace(/^\.\//, '');
+    return path.join(projectRoot, normalizedRelativePath);
   }
 
   /**
@@ -162,13 +190,21 @@ class InstagramService {
   /**
    * Get Instagram post insights (views, likes, comments)
    * Returns: {views, likes, comments, shares}
+   *
+   * Strategy:
+   *  1. Try /{postId}/insights (requires instagram_manage_insights scope).
+   *     If successful, returns full impressions/plays/etc.
+   *  2. If that fails with a permission error (#10), fall back to media fields
+   *     (like_count, comments_count) which work with instagram_basic scope.
+   *     Views stay 0 until the token is re-authorised with manage_insights.
    */
   async getPostAnalytics(postId) {
-    try {
-      if (!postId) {
-        throw new Error('postId is required');
-      }
+    if (!postId) {
+      return { postId, views: 0, likes: 0, comments: 0, shares: 0, saves: 0, plays: 0, error: 'postId is required' };
+    }
 
+    // --- Attempt 1: full /insights endpoint ---
+    try {
       const response = await axios.get(
         `${this.baseURL}/${postId}/insights`,
         {
@@ -180,7 +216,6 @@ class InstagramService {
         }
       );
 
-      // Record API usage
       await this.apiLimiter.consumeLimit('INSTAGRAM', 1);
 
       const insights = {};
@@ -188,7 +223,7 @@ class InstagramService {
         insights[item.name] = item.values?.[0]?.value || 0;
       });
 
-      console.log('[InstagramService] Retrieved analytics for post:', postId);
+      console.log('[InstagramService] Retrieved insights for post:', postId);
 
       return {
         postId,
@@ -200,9 +235,47 @@ class InstagramService {
         plays: insights.plays || 0,
         retrievedAt: new Date().toISOString(),
       };
-    } catch (error) {
-      console.error('[InstagramService] Error getting post analytics:', error.message);
-      // Return zeros on error instead of throwing
+    } catch (insightsError) {
+      const errCode = insightsError.response?.data?.error?.code;
+      const isPermissionError = errCode === 10 || errCode === 200;
+      if (!isPermissionError) {
+        console.error('[InstagramService] Unexpected insights error:', insightsError.message);
+      } else {
+        console.warn('[InstagramService] instagram_manage_insights not granted — falling back to media fields for post:', postId);
+      }
+    }
+
+    // --- Attempt 2: media fields fallback (instagram_basic is enough) ---
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/${postId}`,
+        {
+          params: {
+            fields: 'id,like_count,comments_count',
+            access_token: this.accessToken,
+          },
+          timeout: this.timeout,
+        }
+      );
+
+      await this.apiLimiter.consumeLimit('INSTAGRAM', 1);
+
+      const d = response.data;
+      console.log('[InstagramService] Retrieved media fields (fallback) for post:', postId);
+
+      return {
+        postId,
+        views: 0,          // impressions not available without manage_insights
+        likes: d.like_count || 0,
+        comments: d.comments_count || 0,
+        shares: 0,
+        saves: 0,
+        plays: 0,
+        fallback: true,
+        retrievedAt: new Date().toISOString(),
+      };
+    } catch (fallbackError) {
+      console.error('[InstagramService] Error getting post analytics (fallback):', fallbackError.message);
       return {
         postId,
         views: 0,
@@ -211,7 +284,7 @@ class InstagramService {
         shares: 0,
         saves: 0,
         plays: 0,
-        error: error.message,
+        error: fallbackError.message,
       };
     }
   }
