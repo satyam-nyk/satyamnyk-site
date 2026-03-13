@@ -5,7 +5,7 @@ function fmt(n) {
 
 function syncLoginLinks() {
   document.querySelectorAll('[data-login-link]').forEach((a) => {
-    a.href = '/dashboard/login';
+    a.href = '/dashboard/';
   });
 }
 

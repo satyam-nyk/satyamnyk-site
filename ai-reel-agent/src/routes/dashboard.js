@@ -1,5 +1,4 @@
 import express from 'express';
-import crypto from 'crypto';
 
 /**
  * Dashboard Routes
@@ -7,83 +6,22 @@ import crypto from 'crypto';
  */
 export function createDashboardRouter(database, apiLimiter, researchAgent, scriptAgent, videoAgent, instagramService) {
   const router = express.Router();
-  const authSecret = process.env.DASHBOARD_AUTH_SECRET || process.env.WEBHOOK_SECRET || 'change-this-secret';
-  const authUser = process.env.DASHBOARD_USERNAME || 'admin';
-  const authPassword = process.env.DASHBOARD_PASSWORD || 'change-me';
-
-  const signSession = (payload) => {
-    const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const sig = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
-    return `${encoded}.${sig}`;
-  };
-
-  const verifySession = (token) => {
-    if (!token || !token.includes('.')) return null;
-    const [encoded, sig] = token.split('.');
-    const expected = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
-    if (sig !== expected) return null;
-    try {
-      const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
-      if (!payload?.exp || Date.now() > payload.exp) return null;
-      return payload;
-    } catch {
-      return null;
-    }
-  };
-
-  const getCookie = (req, name) => {
-    const raw = req.headers.cookie || '';
-    const parts = raw.split(';').map((p) => p.trim());
-    for (const part of parts) {
-      if (part.startsWith(`${name}=`)) {
-        return decodeURIComponent(part.substring(name.length + 1));
-      }
-    }
-    return null;
-  };
-
-  const requireAuth = (req, res, next) => {
-    const token = getCookie(req, 'reel_auth');
-    const payload = verifySession(token);
-    if (!payload) {
-      if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ success: false, error: 'Unauthorized' });
-      }
-      return res.redirect('/dashboard/login');
-    }
-    req.auth = payload;
-    return next();
-  };
+  const requireAuth = (req, res, next) => next();
 
   router.get('/login', (req, res) => {
-    res.sendFile(new URL('../../public/dashboard-login.html', import.meta.url).pathname);
+    res.redirect('/dashboard/');
   });
 
   router.post('/api/auth/login', (req, res) => {
-    const { username, password } = req.body || {};
-    if (username !== authUser || password !== authPassword) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-
-    const exp = Date.now() + (7 * 24 * 60 * 60 * 1000);
-    const token = signSession({ username, exp });
-    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-    res.setHeader('Set-Cookie', `reel_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax${secure}; Max-Age=604800`);
     return res.json({ success: true });
   });
 
   router.post('/api/auth/logout', (req, res) => {
-    res.setHeader('Set-Cookie', 'reel_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
     return res.json({ success: true });
   });
 
   router.get('/api/auth/session', (req, res) => {
-    const token = getCookie(req, 'reel_auth');
-    const payload = verifySession(token);
-    if (!payload) {
-      return res.status(401).json({ success: false, error: 'No active session' });
-    }
-    return res.json({ success: true, user: { username: payload.username } });
+    return res.json({ success: true, user: { username: 'local-operator' } });
   });
 
   /**
@@ -91,9 +29,6 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
    * Serve the dashboard HTML file
    */
   router.get('/', (req, res) => {
-    const token = getCookie(req, 'reel_auth');
-    const payload = verifySession(token);
-    if (!payload) return res.redirect('/dashboard/login');
     return res.sendFile(new URL('../../public/dashboard.html', import.meta.url).pathname);
   });
 

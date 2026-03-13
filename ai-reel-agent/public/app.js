@@ -29,35 +29,14 @@ let currentOffset = 0;
 let currentLimit = 20;
 let currentTotal = 0;
 
-async function ensureSession() {
-  const response = await fetch(apiUrl('auth_session'), { credentials: 'include' });
-  if (!response.ok) {
-    window.location.href = '/dashboard/login';
-    return false;
-  }
-  return true;
-}
-
 async function initDashboard() {
-  const active = await ensureSession();
-  if (!active) return;
-
   await updateDashboard();
   await reloadHistory();
-
-  if (updateTimeout) clearInterval(updateTimeout);
-  updateTimeout = setInterval(async () => {
-    await updateDashboard();
-  }, REFRESH_INTERVAL);
 }
 
 async function updateDashboard() {
   try {
     const response = await fetch(apiUrl('dashboard_data'), { credentials: 'include' });
-    if (response.status === 401) {
-      window.location.href = '/dashboard/login';
-      return;
-    }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
@@ -325,6 +304,7 @@ function updateTrendingTopics(topics) {
 
 async function reloadHistory() {
   currentOffset = 0;
+  await updateDashboard();
   await loadHistory();
 }
 
@@ -334,10 +314,6 @@ async function loadHistory() {
 
   try {
     const response = await fetch(url, { credentials: 'include' });
-    if (response.status === 401) {
-      window.location.href = '/dashboard/login';
-      return;
-    }
 
     const payload = await response.json();
     if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to load history');
@@ -430,12 +406,11 @@ function nextPage() {
 }
 
 async function triggerManualPost() {
-  showToast('Manual posting is unavailable on Hostinger shared hosting.', 'error');
+  showToast('Local-only mode: run the pipeline from your laptop, then refresh this dashboard.', 'info');
 }
 
 async function logoutDashboard() {
-  await fetch(apiUrl('auth_logout'), { method: 'POST', credentials: 'include' });
-  window.location.href = '/dashboard/login';
+  window.location.href = '/microsite.html';
 }
 
 function formatNumber(num) {
@@ -479,12 +454,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    if (updateTimeout) clearInterval(updateTimeout);
-  } else {
-    updateDashboard();
-    updateTimeout = setInterval(updateDashboard, REFRESH_INTERVAL);
-  }
+  if (!document.hidden) updateDashboard();
 });
 
 if (document.readyState === 'loading') {
