@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Reel Agent - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🎬 AI Reel Agent Dashboard</h1>
+                <p class="subtitle">Real-time monitoring for daily reel generation</p>
+            </div>
+            <div class="header-status">
+                <div class="status-indicator healthy">
+                    <span class="pulse"></span>
+                    Operational
+                </div>
+                <span class="last-updated">Last updated: <span id="updated-time">--</span></span>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <main class="dashboard-grid">
+            <!-- Today's Reel Section -->
+            <section class="card card-large">
+                <div class="card-header">
+                    <h2>📅 Today's Reel</h2>
+                    <span class="status-badge" id="today-status">Not Started</span>
+                </div>
+                <div class="card-content">
+                    <div class="today-content">
+                        <div class="today-info">
+                            <h3 id="today-topic">Waiting for generation...</h3>
+                            <p id="today-script" class="script-preview">Script will appear here</p>
+                            <div class="today-meta">
+                                <span class="meta-item">
+                                    <strong>Generator:</strong>
+                                    <span id="today-generator">--</span>
+                                </span>
+                                <span class="meta-item">
+                                    <strong>Posted:</strong>
+                                    <span id="today-posted">--</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="manual-post-btn" onclick="triggerManualPost()">
+                        Post Now
+                    </button>
+                </div>
+            </section>
+
+            <!-- API Usage Section -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>🔑 API Usage</h2>
+                </div>
+                <div class="card-content">
+                    <!-- Gemini Usage -->
+                    <div class="api-item">
+                        <h4>Google Gemini</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="gemini-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="api-info">
+                            <span id="gemini-used">0</span>/<span id="gemini-limit">50</span>
+                            <span class="status-light" id="gemini-status">●</span>
+                        </div>
+                    </div>
+
+                    <!-- HeyGen Usage -->
+                    <div class="api-item">
+                        <h4>HeyGen (Monthly)</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="heygen-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="api-info">
+                            <span id="heygen-used">0</span>/<span id="heygen-limit">10</span>
+                            <span class="status-light" id="heygen-status">●</span>
+                        </div>
+                    </div>
+
+                    <!-- Instagram Usage -->
+                    <div class="api-item">
+                        <h4>Instagram API</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="instagram-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="api-info">
+                            <span id="instagram-used">0</span>/<span id="instagram-limit">200</span>
+                            <span class="status-light" id="instagram-status">●</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>📊 Statistics</h2>
+                </div>
+                <div class="card-content stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="total-posts">0</div>
+                        <div class="stat-label">Total Posts</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="total-views">0</div>
+                        <div class="stat-label">Total Views</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="avg-views">0</div>
+                        <div class="stat-label">Avg Views</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="total-likes">0</div>
+                        <div class="stat-label">Total Likes</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Queue Status -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>📋 Queue Status</h2>
+                </div>
+                <div class="card-content">
+                    <div class="queue-stats">
+                        <div class="queue-item">
+                            <h4>Pending Scripts</h4>
+                            <div class="queue-value" id="queue-pending">0</div>
+                        </div>
+                        <div class="queue-item">
+                            <h4>Posted</h4>
+                            <div class="queue-value" id="queue-posted">0</div>
+                        </div>
+                        <div class="queue-item">
+                            <h4>Completion</h4>
+                            <div class="queue-value" id="queue-percent">0%</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar large">
+                        <div class="progress-fill" id="queue-progress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Video Cache -->
+            <section class="card">
+                <div class="card-header">
+                    <h2>💾 Video Cache</h2>
+                </div>
+                <div class="card-content">
+                    <div class="cache-stats">
+                        <div class="cache-item">
+                            <h4>Cached Videos</h4>
+                            <div class="cache-value" id="cache-total">0</div>
+                        </div>
+                        <div class="cache-item">
+                            <h4>Total Reuses</h4>
+                            <div class="cache-value" id="cache-reuses">0</div>
+                        </div>
+                        <div class="cache-item">
+                            <h4>Avg Reuses</h4>
+                            <div class="cache-value" id="cache-avg">0</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Engagement Chart -->
+            <section class="card card-large">
+                <div class="card-header">
+                    <h2>📈 Engagement Trend</h2>
+                </div>
+                <div class="card-content">
+                    <canvas id="engagementChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Trending Topics -->
+            <section class="card card-large">
+                <div class="card-header">
+                    <h2>🔥 Trending Topics (30 days)</h2>
+                </div>
+                <div class="card-content">
+                    <div id="trending-topics" class="trending-list">
+                        <p class="loading">Loading trending topics...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 AI Reel Agent by satyam-nyk. All rights reserved.</p>
+            <p><a href="https://github.com/satyam-nyk/ai-reel-agent" target="_blank">View on GitHub</a></p>
+        </footer>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

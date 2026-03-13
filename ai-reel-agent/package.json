@@ -1,0 +1,38 @@
+{
+  "name": "ai-reel-agent",
+  "version": "1.0.0",
+  "description": "Daily AI-powered reel generator that posts trending topic videos to Instagram automatically",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate": "node scripts/migrate.js"
+  },
+  "keywords": [
+    "ai",
+    "reel",
+    "instagram",
+    "automation",
+    "gemini",
+    "heygen",
+    "nodejs"
+  ],
+  "author": "satyam-nyk",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2",
+    "sqlite3": "^5.1.6",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

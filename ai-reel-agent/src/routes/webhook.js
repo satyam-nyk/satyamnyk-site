@@ -1,0 +1,314 @@
+import express from 'express';
+import { STATUS, ERROR_MESSAGES } from '../config/constants.js';
+
+/**
+ * Webhook Routes
+ * Handles GitHub Actions and external trigger calls for daily reel generation
+ */
+export function createWebhookRouter(
+  database,
+  apiLimiter,
+  researchAgent,
+  scriptAgent,
+  videoAgent,
+  instagramService
+) {
+  const router = express.Router();
+
+  /**
+   * Middleware to verify webhook signature
+   */
+  function verifyWebhookSignature(req, res, next) {
+    const authHeader = req.headers.authorization;
+    const webhookSecret = process.env.WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.warn('[Webhook] WEBHOOK_SECRET not configured');
+      return next(); // Skip verification if not configured
+    }
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+      });
+    }
+
+    const token = authHeader.substring(7);
+    if (token !== webhookSecret) {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden - Invalid webhook secret',
+      });
+    }
+
+    next();
+  }
+
+  /**
+   * POST /api/webhook/generate-daily-reel
+   * Main webhook endpoint for daily reel generation
+   * Triggers the full pipeline: research -> script -> video -> post
+   */
+  router.post('/generate-daily-reel', verifyWebhookSignature, async (req, res) => {
+    const startTime = Date.now();
+    let postData = null;
+
+    try {
+      console.log('[Webhook] Received daily reel generation request');
+
+      // Check today's post (don't regenerate if already exists)
+      const today = new Date().toISOString().split('T')[0];
+      const existingPost = await database.getTodayPost();
+
+      if (existingPost && existingPost.status !== 'failed') {
+        console.log('[Webhook] Today post already exists, skipping generation');
+        return res.status(200).json({
+          success: true,
+          message: 'Post already exists for today',
+          data: existingPost,
+        });
+      }
+
+      // Step 1: Research Topic
+      console.log('[Webhook] Step 1: Researching topic...');
+      const topic = await researchAgent.researchTodaysTopic();
+      if (!topic) {
+        throw new Error('Failed to research topic');
+      }
+
+      // Step 2: Generate Script
+      console.log('[Webhook] Step 2: Generating script...');
+      const scriptData = await scriptAgent.generateScript(topic);
+      if (!scriptData) {
+        throw new Error('Failed to generate script');
+      }
+
+      // Step 3: Generate Video
+      console.log('[Webhook] Step 3: Generating video...');
+      const videoData = await videoAgent.generateVideoForDay(scriptData.script);
+      if (!videoData) {
+        throw new Error('Failed to generate video or use cached video');
+      }
+
+      // Step 4: Post to Instagram
+      console.log('[Webhook] Step 4: Posting to Instagram...');
+      const caption = `${scriptData.script}\n\n${INSTAGRAM_CONFIG.HASHTAGS.slice(0, 10).join(' ')}`;
+
+      let instagramResult = null;
+      try {
+        instagramResult = await instagramService.postReel(videoData.videoPath, caption);
+      } catch (error) {
+        console.warn('[Webhook] Instagram posting failed:', error.message);
+        // Continue even if Instagram fails, we'll store the draft
+        instagramResult = null;
+      }
+
+      // Step 5: Store in database
+      console.log('[Webhook] Step 5: Storing in database...');
+      postData = {
+        date: today,
+        topic: topic.topic,
+        script: scriptData.script,
+        videoId: videoData.videoId,
+        status: instagramResult ? STATUS.POSTED : STATUS.PENDING,
+        method: videoData.generator,
+      };
+
+      await database.upsertDailyPost(today, postData);
+
+      if (instagramResult) {
+        await database.updatePostWithInstagram(today, instagramResult.postId, STATUS.POSTED);
+      }
+
+      const duration = Date.now() - startTime;
+
+      console.log('[Webhook] Daily reel generation complete in', duration, 'ms');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Daily reel generated and posted successfully',
+        data: {
+          date: today,
+          topic: topic.topic,
+          videoId: videoData.videoId,
+          postId: instagramResult?.postId || null,
+          generator: videoData.generator,
+          duration,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('[Webhook] Error in daily reel generation:', error.message);
+
+      const duration = Date.now() - startTime;
+
+      // Try to store failure status
+      if (postData) {
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          await database.upsertDailyPost(today, {
+            ...postData,
+            status: STATUS.FAILED,
+          });
+        } catch (dbError) {
+          console.error('[Webhook] Error saving failure status:', dbError.message);
+        }
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to generate daily reel',
+        duration,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  /**
+   * GET /api/webhook/status
+   * Check system health and readiness
+   */
+  router.get('/status', async (req, res) => {
+    try {
+      const apiStatus = await apiLimiter.getStatus();
+      const today = new Date().toISOString().split('T')[0];
+      const todayPost = await database.getTodayPost();
+
+      return res.status(200).json({
+        success: true,
+        system: {
+          status: 'operational',
+          timestamp: new Date().toISOString(),
+        },
+        apis: apiStatus,
+        todayPost: {
+          exists: !!todayPost,
+          status: todayPost?.status || 'not_started',
+        },
+      });
+    } catch (error) {
+      console.error('[Webhook] Error checking status:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+
+  /**
+   * POST /api/webhook/batch-process
+   * Trigger batch processing for the week (Sunday only)
+   */
+  router.post('/batch-process', verifyWebhookSignature, async (req, res) => {
+    try {
+      console.log('[Webhook] Received batch processing request');
+
+      const today = new Date();
+      if (today.getDay() !== 0) {
+        // 0 = Sunday
+        return res.status(400).json({
+          success: false,
+          error: 'Batch processing only runs on Sunday',
+        });
+      }
+
+      // Run batch research
+      const topics = await researchAgent.batchResearchWeekly();
+
+      if (topics.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Failed to generate topics for batch processing',
+        });
+      }
+
+      // Queue scripts for topics
+      const queueResult = await scriptAgent.batchQueueScripts(topics);
+
+      console.log('[Webhook] Batch processing complete');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Batch processing completed',
+        data: {
+          topicsGenerated: topics.length,
+          scriptsQueued: queueResult.inserted,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('[Webhook] Error in batch processing:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+
+  /**
+   * POST /api/webhook/manual-post
+   * Manually trigger posting of queued script
+   */
+  router.post('/manual-post', verifyWebhookSignature, async (req, res) => {
+    try {
+      console.log('[Webhook] Received manual post request');
+
+      // Get next queued script
+      const script = await scriptAgent.getNextScript();
+      if (!script) {
+        return res.status(400).json({
+          success: false,
+          error: 'No queued scripts available',
+        });
+      }
+
+      // Generate video
+      const video = await videoAgent.generateVideoForDay();
+      if (!video) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to generate or retrieve video',
+        });
+      }
+
+      // Post to Instagram
+      const caption = `${script.script}\n\n${INSTAGRAM_CONFIG.HASHTAGS.slice(0, 10).join(' ')}`;
+      const instagramResult = await instagramService.postReel(video.videoPath, caption);
+
+      if (!instagramResult) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to post to Instagram',
+        });
+      }
+
+      // Update script status
+      await database.updateScriptStatus(script.id, STATUS.POSTED, video.videoId, instagramResult.postId);
+
+      console.log('[Webhook] Manual post successful');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Post created successfully',
+        data: {
+          scriptId: script.id,
+          postId: instagramResult.postId,
+          url: instagramResult.url,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('[Webhook] Error in manual post:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+
+  return router;
+}
+
+// Import for INSTAGRAM_CONFIG
+import { INSTAGRAM_CONFIG } from '../config/constants.js';
