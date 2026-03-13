@@ -1,11 +1,21 @@
-const DASHBOARD_API = window.DASHBOARD_API_URL || 'dashboard-api.php';
+// Base path to Node dashboard API — works both locally and on Render
+const API_BASE = '/dashboard/api';
 const REFRESH_INTERVAL = 30000;
 
 function apiUrl(action, params = {}) {
-  const url = new URL(DASHBOARD_API, window.location.href);
-  url.searchParams.set('action', action);
+  const map = {
+    auth_session:   `${API_BASE}/auth/session`,
+    auth_login:     `${API_BASE}/auth/login`,
+    auth_logout:    `${API_BASE}/auth/logout`,
+    dashboard_data: `${API_BASE}/dashboard-data`,
+    post_history:   `${API_BASE}/dashboard-data/posts`,
+    post_detail:    (p) => `${API_BASE}/dashboard-data/posts/${p.id}`,
+    public_stats:   '/dashboard-public-stats',
+  };
+  const base = typeof map[action] === 'function' ? map[action](params) : (map[action] || `${API_BASE}/${action}`);
+  const url = new URL(base, window.location.href);
   Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null) {
+    if (key !== 'id' && value !== undefined && value !== null) {
       url.searchParams.set(key, String(value));
     }
   });
@@ -22,7 +32,7 @@ let currentTotal = 0;
 async function ensureSession() {
   const response = await fetch(apiUrl('auth_session'), { credentials: 'include' });
   if (!response.ok) {
-    window.location.href = 'dashboard-login.php';
+    window.location.href = '/dashboard/login';
     return false;
   }
   return true;
@@ -45,7 +55,7 @@ async function updateDashboard() {
   try {
     const response = await fetch(apiUrl('dashboard_data'), { credentials: 'include' });
     if (response.status === 401) {
-      window.location.href = 'dashboard-login.php';
+      window.location.href = '/dashboard/login';
       return;
     }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -325,7 +335,7 @@ async function loadHistory() {
   try {
     const response = await fetch(url, { credentials: 'include' });
     if (response.status === 401) {
-      window.location.href = 'dashboard-login.php';
+      window.location.href = '/dashboard/login';
       return;
     }
 
@@ -425,7 +435,7 @@ async function triggerManualPost() {
 
 async function logoutDashboard() {
   await fetch(apiUrl('auth_logout'), { method: 'POST', credentials: 'include' });
-  window.location.href = 'dashboard-login.php';
+  window.location.href = '/dashboard/login';
 }
 
 function formatNumber(num) {

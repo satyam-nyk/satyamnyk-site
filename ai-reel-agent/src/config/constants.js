@@ -13,6 +13,7 @@ export const API_LIMITS = {
     VIDEO_QUALITY: 'high',
   },
   INSTAGRAM: {
+    DAILY_LIMIT: 200,
     RATE_LIMIT: 200, // requests per hour
     TIMEOUT: 30000, // 30 seconds
   },

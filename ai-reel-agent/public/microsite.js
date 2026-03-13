@@ -5,7 +5,7 @@ function fmt(n) {
 
 function syncLoginLinks() {
   document.querySelectorAll('[data-login-link]').forEach((a) => {
-    a.href = 'dashboard-login.php?autologin=1';
+    a.href = '/dashboard/login';
   });
 }
 
@@ -21,7 +21,7 @@ async function loadPublicStats() {
   methodEl.textContent = '...';
 
   try {
-    const statsRes = await fetch('dashboard-public-stats.php');
+    const statsRes = await fetch('/dashboard-public-stats');
     const data = await statsRes.json();
     if (!statsRes.ok || !data.success) throw new Error('stats unavailable');
 
