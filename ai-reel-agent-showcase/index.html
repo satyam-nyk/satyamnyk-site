@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI Reel Agent showcase: automated reel research, script generation, production workflow, and local analytics dashboard flow." />
+  <title>AI Reel Agent | Static Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="backdrop-grid" aria-hidden="true"></div>
+
+  <header class="hero">
+    <nav class="nav shell">
+      <div class="brand">AI Reel Agent</div>
+      <div class="actions">
+        <a href="#local-dashboard" class="btn btn-outline">Local Dashboard Flow</a>
+        <a href="../index.html" class="btn btn-link">Portfolio</a>
+      </div>
+    </nav>
+
+    <div class="hero-content shell">
+      <span class="eyebrow">Project Showcase</span>
+      <h1>From Trend Research to Published Short-Form Content in One Repeatable System</h1>
+      <p class="hero-copy">
+        AI Reel Agent is a content operations engine built to discover timely topics, generate balanced scripts,
+        assemble short-form video assets, and track outcomes through a local operator dashboard.
+      </p>
+      <div class="hero-cta">
+        <a href="#snapshot" class="btn btn-solid">View System Snapshot</a>
+        <a href="#local-dashboard" class="btn btn-soft">See Local Dashboard Flow</a>
+      </div>
+      <div class="hero-trust">
+        <span>Topic research pipeline</span>
+        <span>Script + narration workflow</span>
+        <span>Local dashboard refresh on open</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="section">
+      <div class="section-head">
+        <h2>How The System Works</h2>
+        <p>A compact publishing workflow designed for hands-on operation from one laptop.</p>
+      </div>
+      <div class="pipeline-grid">
+        <article class="step-card"><span>01</span><h3>Topic Discovery</h3><p>Surfaces high-signal news and trend topics for new reel ideas.</p></article>
+        <article class="step-card"><span>02</span><h3>Script Build</h3><p>Creates short-form, neutral scripts with hook-first structure.</p></article>
+        <article class="step-card"><span>03</span><h3>Video Assembly</h3><p>Combines visuals, voice, subtitles, and vertical formatting.</p></article>
+        <article class="step-card"><span>04</span><h3>Review + Refresh</h3><p>Operator opens the local dashboard to inspect updated performance and history.</p></article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="feature-split">
+        <article class="card feature-card">
+          <h3>Core Capabilities</h3>
+          <ul class="clean-list">
+            <li>Trend-led topic research</li>
+            <li>Script generation with factual framing</li>
+            <li>Narration and vertical reel composition</li>
+            <li>Instagram-oriented performance tracking</li>
+            <li>Project microsite plus local dashboard workflow</li>
+          </ul>
+        </article>
+        <article class="card feature-card accent" id="local-dashboard">
+          <h3>Local Dashboard Flow</h3>
+          <p>The dashboard is intentionally laptop-only. Open the app locally, then visit the dashboard to refresh analytics and history manually when needed.</p>
+          <div class="flow-box">
+            <div><strong>Run locally:</strong> <code>npm start</code></div>
+            <div><strong>Microsite:</strong> <code>http://localhost:3000/microsite.html</code></div>
+            <div><strong>Dashboard:</strong> <code>http://localhost:3000/dashboard/</code></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="snapshot">
+      <div class="section-head">
+        <h2>System Snapshot</h2>
+        <p>This public page is static. Analytics refresh happens only in the local dashboard.</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span class="k">Local</span><span class="l">Runtime</span></div>
+        <div class="stat"><span class="k">Manual</span><span class="l">Refresh Model</span></div>
+        <div class="stat"><span class="k">Microsite</span><span class="l">Public Surface</span></div>
+        <div class="stat"><span class="k">Dashboard</span><span class="l">Operator Only</span></div>
+      </div>
+
+      <p class="note">This keeps the public site simple and avoids any cloud deployment or custom domain runtime dependencies.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>AI Reel Agent • Static Showcase on satyamnyk.com</p>
+  </footer>
+</body>
+</html>
