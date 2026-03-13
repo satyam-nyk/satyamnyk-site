@@ -1,8 +1,5 @@
 function resolveApiBase() {
-  const qs = new URLSearchParams(window.location.search);
-  const queryApi = qs.get('api');
-  const savedApi = localStorage.getItem('reel-api-base');
-  return (queryApi || savedApi || window.location.origin).replace(/\/$/, '');
+  return window.location.origin.replace(/\/$/, '');
 }
 
 const API_BASE = resolveApiBase();
@@ -19,7 +16,7 @@ let currentTotal = 0;
 async function ensureSession() {
   const response = await fetch(`${API_BASE}/dashboard/api/auth/session`, { credentials: 'include' });
   if (!response.ok) {
-    window.location.href = `dashboard-login.html?api=${encodeURIComponent(API_BASE)}`;
+    window.location.href = 'dashboard-login.html';
     return false;
   }
   return true;
@@ -42,7 +39,7 @@ async function updateDashboard() {
   try {
     const response = await fetch(API_BASE_URL, { credentials: 'include' });
     if (response.status === 401) {
-      window.location.href = `dashboard-login.html?api=${encodeURIComponent(API_BASE)}`;
+      window.location.href = 'dashboard-login.html';
       return;
     }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -322,7 +319,7 @@ async function loadHistory() {
   try {
     const response = await fetch(url, { credentials: 'include' });
     if (response.status === 401) {
-      window.location.href = `dashboard-login.html?api=${encodeURIComponent(API_BASE)}`;
+      window.location.href = 'dashboard-login.html';
       return;
     }
 
@@ -433,7 +430,7 @@ async function triggerManualPost() {
 
 async function logoutDashboard() {
   await fetch(`${API_BASE}/dashboard/api/auth/logout`, { method: 'POST', credentials: 'include' });
-  window.location.href = `dashboard-login.html?api=${encodeURIComponent(API_BASE)}`;
+  window.location.href = 'dashboard-login.html';
 }
 
 function getWebhookSecret() {

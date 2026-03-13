@@ -3,49 +3,15 @@ function fmt(n) {
   return Number(n).toLocaleString();
 }
 
-function getApiBase() {
-  const qs = new URLSearchParams(window.location.search);
-  const fromQuery = qs.get('api');
-  if (fromQuery) {
-    localStorage.setItem('reel-api-base', fromQuery.replace(/\/$/, ''));
-    return fromQuery.replace(/\/$/, '');
-  }
-
-  const saved = localStorage.getItem('reel-api-base');
-  if (saved) return saved.replace(/\/$/, '');
-  return window.location.origin;
-}
-
-function setupApiConfig() {
-  const input = document.getElementById('api-base');
-  const save = document.getElementById('save-api');
-  if (!input || !save) return;
-
-  input.value = getApiBase();
-  syncLoginLinks(input.value);
-  save.addEventListener('click', () => {
-    const v = input.value.trim().replace(/\/$/, '');
-    if (!v) return;
-    localStorage.setItem('reel-api-base', v);
-    syncLoginLinks(v);
-    save.textContent = 'Saved';
-    setTimeout(() => {
-      save.textContent = 'Save Endpoint';
-    }, 900);
-    loadPublicStats();
-  });
-}
-
-function syncLoginLinks(apiBase) {
-  const clean = (apiBase || '').trim().replace(/\/$/, '');
-  if (!clean) return;
+function syncLoginLinks() {
+  const apiBase = window.location.origin;
   document.querySelectorAll('[data-login-link]').forEach((a) => {
-    a.href = `dashboard-login.html?api=${encodeURIComponent(clean)}`;
+    a.href = `${apiBase}/ai-reel-agent/public/dashboard-login.html`;
   });
 }
 
 async function loadPublicStats() {
-  const apiBase = getApiBase();
+  const apiBase = window.location.origin;
   const postEl = document.getElementById('k-posts');
   const viewsEl = document.getElementById('k-views');
   const engEl = document.getElementById('k-eng');
@@ -81,5 +47,5 @@ async function loadPublicStats() {
   }
 }
 
-setupApiConfig();
+syncLoginLinks();
 loadPublicStats();

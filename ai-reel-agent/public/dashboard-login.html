@@ -66,17 +66,12 @@
     .msg { margin-top: 12px; min-height: 20px; font-size: 0.9rem; color: var(--danger); }
     .links { margin-top: 16px; text-align: center; }
     .links a { color: var(--accent2); text-decoration: none; }
-    .help { margin-top: 6px; color: var(--muted); font-size: 0.82rem; }
   </style>
 </head>
 <body>
   <form class="panel" id="login-form">
     <h1>Secure Dashboard Login</h1>
     <p>Only authorized users can access reel analytics and posting history.</p>
-
-    <label for="apiBase">Backend API Base URL</label>
-    <input id="apiBase" name="apiBase" type="url" placeholder="https://your-app.up.railway.app" required />
-    <div class="help">Use your deployed API host. This is stored in your browser.</div>
 
     <label for="username">Username</label>
     <input id="username" name="username" type="text" autocomplete="username" required />
@@ -92,23 +87,14 @@
   <script>
     const form = document.getElementById('login-form');
     const msg = document.getElementById('msg');
-    const qs = new URLSearchParams(window.location.search);
-    const queryApi = qs.get('api');
-    const savedApi = localStorage.getItem('reel-api-base');
-    form.apiBase.value = (queryApi || savedApi || window.location.origin).replace(/\/$/, '');
-
-    function sanitizeApi(v) {
-      return (v || '').trim().replace(/\/$/, '');
-    }
+    const apiBase = window.location.origin;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       msg.textContent = '';
 
-      const apiBase = sanitizeApi(form.apiBase.value);
       const username = form.username.value.trim();
       const password = form.password.value;
-      localStorage.setItem('reel-api-base', apiBase);
 
       try {
         const res = await fetch(`${apiBase}/dashboard/api/auth/login`, {
@@ -126,10 +112,7 @@
 
         window.location.href = `${apiBase}/dashboard`;
       } catch (_err) {
-        msg.textContent = 'Cross-site login blocked by browser. Opening backend login...';
-        setTimeout(() => {
-          window.location.href = `${apiBase}/dashboard/login`;
-        }, 600);
+        msg.textContent = 'Login service unavailable on this host. Start backend and open /dashboard/login.';
       }
     });
   </script>
