@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 
 /**
  * Dashboard Routes
@@ -6,20 +7,101 @@ import express from 'express';
  */
 export function createDashboardRouter(database, apiLimiter, researchAgent, scriptAgent, videoAgent, instagramService) {
   const router = express.Router();
+  const authSecret = process.env.DASHBOARD_AUTH_SECRET || process.env.WEBHOOK_SECRET || 'change-this-secret';
+  const authUser = process.env.DASHBOARD_USERNAME || 'admin';
+  const authPassword = process.env.DASHBOARD_PASSWORD || 'change-me';
+
+  const signSession = (payload) => {
+    const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const sig = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
+    return `${encoded}.${sig}`;
+  };
+
+  const verifySession = (token) => {
+    if (!token || !token.includes('.')) return null;
+    const [encoded, sig] = token.split('.');
+    const expected = crypto.createHmac('sha256', authSecret).update(encoded).digest('base64url');
+    if (sig !== expected) return null;
+    try {
+      const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+      if (!payload?.exp || Date.now() > payload.exp) return null;
+      return payload;
+    } catch {
+      return null;
+    }
+  };
+
+  const getCookie = (req, name) => {
+    const raw = req.headers.cookie || '';
+    const parts = raw.split(';').map((p) => p.trim());
+    for (const part of parts) {
+      if (part.startsWith(`${name}=`)) {
+        return decodeURIComponent(part.substring(name.length + 1));
+      }
+    }
+    return null;
+  };
+
+  const requireAuth = (req, res, next) => {
+    const token = getCookie(req, 'reel_auth');
+    const payload = verifySession(token);
+    if (!payload) {
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+      }
+      return res.redirect('/dashboard/login');
+    }
+    req.auth = payload;
+    return next();
+  };
+
+  router.get('/login', (req, res) => {
+    res.sendFile(new URL('../../public/dashboard-login.html', import.meta.url).pathname);
+  });
+
+  router.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body || {};
+    if (username !== authUser || password !== authPassword) {
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    }
+
+    const exp = Date.now() + (7 * 24 * 60 * 60 * 1000);
+    const token = signSession({ username, exp });
+    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    res.setHeader('Set-Cookie', `reel_auth=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax${secure}; Max-Age=604800`);
+    return res.json({ success: true });
+  });
+
+  router.post('/api/auth/logout', (req, res) => {
+    res.setHeader('Set-Cookie', 'reel_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    return res.json({ success: true });
+  });
+
+  router.get('/api/auth/session', (req, res) => {
+    const token = getCookie(req, 'reel_auth');
+    const payload = verifySession(token);
+    if (!payload) {
+      return res.status(401).json({ success: false, error: 'No active session' });
+    }
+    return res.json({ success: true, user: { username: payload.username } });
+  });
 
   /**
    * GET /dashboard
    * Serve the dashboard HTML file
    */
   router.get('/', (req, res) => {
-    res.sendFile(new URL('../../public/dashboard.html', import.meta.url).pathname);
+    const token = getCookie(req, 'reel_auth');
+    const payload = verifySession(token);
+    if (!payload) return res.redirect('/dashboard/login');
+    return res.sendFile(new URL('../../public/dashboard.html', import.meta.url).pathname);
   });
 
   /**
    * GET /api/dashboard-data
    * Return all dashboard data in JSON format
    */
-  router.get('/api/dashboard-data', async (req, res) => {
+  router.get('/api/dashboard-data', requireAuth, async (req, res) => {
     try {
       const today = new Date().toISOString().split('T')[0];
 
@@ -42,7 +124,9 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
       const trendingTopics = await researchAgent.getTrendingTopics(30, 10);
 
       // Get analytics for last 7 days
-      const analytics = await database.getAnalytics(7);
+      const analytics = await database.getAnalytics(30);
+      const insights = await database.getInsightsSummary(30);
+      const recommendations = await database.getRecommendations(90);
 
       return res.json({
         success: true,
@@ -103,6 +187,8 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
           avgViewsPerPost: a.average_views_per_post || 0,
           avgEngagementRate: a.average_engagement_rate || 0,
         })),
+        insights,
+        recommendations,
       });
     } catch (error) {
       console.error('[Dashboard] Error retrieving dashboard data:', error.message);
@@ -117,7 +203,7 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
    * GET /api/dashboard-data/today-detail
    * Get detailed information about today's post
    */
-  router.get('/api/dashboard-data/today-detail', async (req, res) => {
+  router.get('/api/dashboard-data/today-detail', requireAuth, async (req, res) => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const todayPost = await database.getTodayPost();
@@ -155,7 +241,7 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
    * GET /api/dashboard-data/analytics/:days
    * Get analytics for specified number of days
    */
-  router.get('/api/dashboard-data/analytics/:days', async (req, res) => {
+  router.get('/api/dashboard-data/analytics/:days', requireAuth, async (req, res) => {
     try {
       const days = Math.min(parseInt(req.params.days) || 30, 365);
       const analytics = await database.getAnalytics(days);
@@ -187,7 +273,7 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
    * GET /api/dashboard-data/queue-status
    * Get current script queue status
    */
-  router.get('/api/dashboard-data/queue-status', async (req, res) => {
+  router.get('/api/dashboard-data/queue-status', requireAuth, async (req, res) => {
     try {
       const stats = await scriptAgent.getQueueStats();
 
@@ -213,7 +299,7 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
    * GET /api/dashboard-data/api-limits
    * Get current API limit status
    */
-  router.get('/api/dashboard-data/api-limits', async (req, res) => {
+  router.get('/api/dashboard-data/api-limits', requireAuth, async (req, res) => {
     try {
       const status = await apiLimiter.getStatus();
 
@@ -262,7 +348,7 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
    * GET /api/dashboard-data/trending-topics
    * Get trending topics
    */
-  router.get('/api/dashboard-data/trending-topics', async (req, res) => {
+  router.get('/api/dashboard-data/trending-topics', requireAuth, async (req, res) => {
     try {
       const limit = Math.min(parseInt(req.query.limit) || 10, 50);
       const topics = await researchAgent.getTrendingTopics(30, limit);
@@ -277,6 +363,79 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
         success: false,
         error: error.message,
       });
+    }
+  });
+
+  router.get('/api/dashboard-data/posts', requireAuth, async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit, 10) || 25, 100);
+      const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+      const status = req.query.status || 'all';
+
+      const [posts, total] = await Promise.all([
+        database.getPostHistory(limit, offset, status),
+        database.countPosts(status),
+      ]);
+
+      return res.json({
+        success: true,
+        data: posts,
+        pagination: {
+          limit,
+          offset,
+          total,
+          hasMore: offset + posts.length < total,
+        },
+      });
+    } catch (error) {
+      console.error('[Dashboard] Error retrieving posts:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  router.get('/api/dashboard-data/posts/:id', requireAuth, async (req, res) => {
+    try {
+      const postId = parseInt(req.params.id, 10);
+      if (!postId) {
+        return res.status(400).json({ success: false, error: 'Invalid post id' });
+      }
+
+      const post = await database.getPostById(postId);
+      if (!post) {
+        return res.status(404).json({ success: false, error: 'Post not found' });
+      }
+
+      let instagramAnalytics = null;
+      if (post.instagram_post_id) {
+        instagramAnalytics = await instagramService.getPostAnalytics(post.instagram_post_id);
+      }
+
+      return res.json({ success: true, data: { ...post, instagramAnalytics } });
+    } catch (error) {
+      console.error('[Dashboard] Error retrieving post detail:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  router.get('/api/dashboard-data/insights/:days', requireAuth, async (req, res) => {
+    try {
+      const days = Math.min(parseInt(req.params.days, 10) || 30, 365);
+      const insights = await database.getInsightsSummary(days);
+      return res.json({ success: true, days, data: insights });
+    } catch (error) {
+      console.error('[Dashboard] Error retrieving insights:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  router.get('/api/dashboard-data/recommendations/:days', requireAuth, async (req, res) => {
+    try {
+      const days = Math.min(parseInt(req.params.days, 10) || 90, 365);
+      const data = await database.getRecommendations(days);
+      return res.json({ success: true, days, data });
+    } catch (error) {
+      console.error('[Dashboard] Error retrieving recommendations:', error.message);
+      return res.status(500).json({ success: false, error: error.message });
     }
   });
 

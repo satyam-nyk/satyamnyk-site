@@ -440,6 +440,304 @@ class Database {
   }
 
   /**
+   * Get post history with pagination and computed engagement rate
+   */
+  async getPostHistory(limit = 50, offset = 0, status = null) {
+    return new Promise((resolve, reject) => {
+      const params = [];
+      let where = '';
+      if (status && status !== 'all') {
+        where = 'WHERE status = ?';
+        params.push(status);
+      }
+
+      const query = `
+        SELECT
+          id,
+          date,
+          topic,
+          script,
+          video_id,
+          instagram_post_id,
+          views,
+          likes,
+          comments,
+          shares,
+          status,
+          generation_method,
+          posted_at,
+          created_at,
+          updated_at,
+          CASE
+            WHEN views > 0 THEN ROUND(((likes + comments + shares) * 100.0) / views, 2)
+            ELSE 0
+          END as engagement_rate
+        FROM daily_posts
+        ${where}
+        ORDER BY date DESC
+        LIMIT ? OFFSET ?
+      `;
+
+      this.db.all(query, [...params, limit, offset], (err, rows) => {
+        if (err) {
+          console.error('Error getting post history:', err);
+          reject(err);
+          return;
+        }
+        resolve(rows || []);
+      });
+    });
+  }
+
+  /**
+   * Count total posts for history pagination
+   */
+  async countPosts(status = null) {
+    return new Promise((resolve, reject) => {
+      const params = [];
+      let where = '';
+      if (status && status !== 'all') {
+        where = 'WHERE status = ?';
+        params.push(status);
+      }
+
+      const query = `SELECT COUNT(*) as total FROM daily_posts ${where}`;
+      this.db.get(query, params, (err, row) => {
+        if (err) {
+          console.error('Error counting posts:', err);
+          reject(err);
+          return;
+        }
+        resolve(row?.total || 0);
+      });
+    });
+  }
+
+  /**
+   * Get one post detail by id
+   */
+  async getPostById(postId) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT
+          id,
+          date,
+          topic,
+          script,
+          video_id,
+          instagram_post_id,
+          views,
+          likes,
+          comments,
+          shares,
+          status,
+          generation_method,
+          posted_at,
+          created_at,
+          updated_at,
+          CASE
+            WHEN views > 0 THEN ROUND(((likes + comments + shares) * 100.0) / views, 2)
+            ELSE 0
+          END as engagement_rate
+        FROM daily_posts
+        WHERE id = ?
+      `;
+
+      this.db.get(query, [postId], (err, row) => {
+        if (err) {
+          console.error('Error getting post by id:', err);
+          reject(err);
+          return;
+        }
+        resolve(row || null);
+      });
+    });
+  }
+
+  /**
+   * Aggregate insights for dashboard overview
+   */
+  async getInsightsSummary(days = 30) {
+    return new Promise((resolve, reject) => {
+      const params = [`-${days} days`];
+
+      const kpiQuery = `
+        SELECT
+          COUNT(*) as total_posts,
+          SUM(CASE WHEN status = 'posted' THEN 1 ELSE 0 END) as posted_count,
+          SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count,
+          SUM(views) as total_views,
+          SUM(likes) as total_likes,
+          SUM(comments) as total_comments,
+          SUM(shares) as total_shares,
+          ROUND(AVG(CASE WHEN views > 0 THEN ((likes + comments + shares) * 100.0) / views END), 2) as avg_engagement_rate
+        FROM daily_posts
+        WHERE date >= date('now', ?)
+      `;
+
+      this.db.get(kpiQuery, params, (kpiErr, kpiRow) => {
+        if (kpiErr) {
+          console.error('Error getting insight KPI:', kpiErr);
+          reject(kpiErr);
+          return;
+        }
+
+        const topTopicsQuery = `
+          SELECT
+            topic,
+            COUNT(*) as posts,
+            ROUND(AVG(views), 2) as avg_views,
+            ROUND(AVG(CASE WHEN views > 0 THEN ((likes + comments + shares) * 100.0) / views END), 2) as avg_engagement_rate
+          FROM daily_posts
+          WHERE date >= date('now', ?) AND topic IS NOT NULL AND topic != ''
+          GROUP BY topic
+          ORDER BY posts DESC, avg_views DESC
+          LIMIT 10
+        `;
+
+        this.db.all(topTopicsQuery, params, (topicErr, topicRows) => {
+          if (topicErr) {
+            console.error('Error getting top topics:', topicErr);
+            reject(topicErr);
+            return;
+          }
+
+          const methodSplitQuery = `
+            SELECT
+              COALESCE(generation_method, 'unknown') as method,
+              COUNT(*) as count
+            FROM daily_posts
+            WHERE date >= date('now', ?)
+            GROUP BY COALESCE(generation_method, 'unknown')
+            ORDER BY count DESC
+          `;
+
+          this.db.all(methodSplitQuery, params, (methodErr, methodRows) => {
+            if (methodErr) {
+              console.error('Error getting generation split:', methodErr);
+              reject(methodErr);
+              return;
+            }
+
+            resolve({
+              kpi: kpiRow || {},
+              topTopics: topicRows || [],
+              methodSplit: methodRows || [],
+            });
+          });
+        });
+      });
+    });
+  }
+
+  /**
+   * Compute recommendation insights for posting strategy
+   */
+  async getRecommendations(days = 90) {
+    return new Promise((resolve, reject) => {
+      const rangeParam = `-${days} days`;
+
+      const bestHourQuery = `
+        SELECT
+          strftime('%H', posted_at) as hour,
+          COUNT(*) as posts,
+          ROUND(AVG(views), 2) as avg_views,
+          ROUND(AVG(CASE WHEN views > 0 THEN ((likes + comments + shares) * 100.0) / views END), 2) as avg_engagement
+        FROM daily_posts
+        WHERE status = 'posted' AND posted_at IS NOT NULL AND date >= date('now', ?)
+        GROUP BY strftime('%H', posted_at)
+        ORDER BY COALESCE(avg_engagement, 0) DESC, COALESCE(avg_views, 0) DESC, posts DESC
+        LIMIT 1
+      `;
+
+      this.db.get(bestHourQuery, [rangeParam], (hourErr, bestHour) => {
+        if (hourErr) {
+          console.error('Error getting best posting hour:', hourErr);
+          reject(hourErr);
+          return;
+        }
+
+        const bestDayQuery = `
+          SELECT
+            strftime('%w', posted_at) as day,
+            COUNT(*) as posts,
+            ROUND(AVG(views), 2) as avg_views,
+            ROUND(AVG(CASE WHEN views > 0 THEN ((likes + comments + shares) * 100.0) / views END), 2) as avg_engagement
+          FROM daily_posts
+          WHERE status = 'posted' AND posted_at IS NOT NULL AND date >= date('now', ?)
+          GROUP BY strftime('%w', posted_at)
+          ORDER BY COALESCE(avg_engagement, 0) DESC, COALESCE(avg_views, 0) DESC, posts DESC
+          LIMIT 1
+        `;
+
+        this.db.get(bestDayQuery, [rangeParam], (dayErr, bestDay) => {
+          if (dayErr) {
+            console.error('Error getting best posting day:', dayErr);
+            reject(dayErr);
+            return;
+          }
+
+          const momentumQuery = `
+            SELECT
+              topic,
+              COUNT(CASE WHEN date >= date('now', '-14 days') THEN 1 END) as recent_posts,
+              ROUND(AVG(CASE WHEN date >= date('now', '-14 days') THEN views END), 2) as recent_avg_views,
+              ROUND(AVG(CASE WHEN date < date('now', '-14 days') AND date >= date('now', '-28 days') THEN views END), 2) as previous_avg_views,
+              ROUND(
+                ((COALESCE(AVG(CASE WHEN date >= date('now', '-14 days') THEN views END), 0) -
+                COALESCE(AVG(CASE WHEN date < date('now', '-14 days') AND date >= date('now', '-28 days') THEN views END), 0))
+                * 100.0) /
+                CASE
+                  WHEN COALESCE(AVG(CASE WHEN date < date('now', '-14 days') AND date >= date('now', '-28 days') THEN views END), 0) <= 0 THEN 1
+                  ELSE AVG(CASE WHEN date < date('now', '-14 days') AND date >= date('now', '-28 days') THEN views END)
+                END,
+                2
+              ) as momentum_score
+            FROM daily_posts
+            WHERE status = 'posted' AND topic IS NOT NULL AND topic != ''
+            GROUP BY topic
+            HAVING recent_posts > 0
+            ORDER BY momentum_score DESC, recent_avg_views DESC
+            LIMIT 5
+          `;
+
+          this.db.all(momentumQuery, (momentumErr, momentumRows) => {
+            if (momentumErr) {
+              console.error('Error getting momentum topics:', momentumErr);
+              reject(momentumErr);
+              return;
+            }
+
+            const cadenceQuery = `
+              SELECT
+                COUNT(*) as posts_last_7,
+                ROUND(AVG(views), 2) as avg_views_last_7,
+                ROUND(AVG(CASE WHEN views > 0 THEN ((likes + comments + shares) * 100.0) / views END), 2) as avg_engagement_last_7
+              FROM daily_posts
+              WHERE status = 'posted' AND date >= date('now', '-7 days')
+            `;
+
+            this.db.get(cadenceQuery, (cadenceErr, cadence) => {
+              if (cadenceErr) {
+                console.error('Error getting cadence stats:', cadenceErr);
+                reject(cadenceErr);
+                return;
+              }
+
+              resolve({
+                bestHour: bestHour || null,
+                bestDay: bestDay || null,
+                momentumTopics: momentumRows || [],
+                cadence: cadence || {},
+              });
+            });
+          });
+        });
+      });
+    });
+  }
+
+  /**
    * Close database connection
    */
   closeDB() {

@@ -1,0 +1,66 @@
+:root {
+  --bg: #08111c;
+  --bg2: #0d1727;
+  --card: #132238;
+  --text: #e9f2ff;
+  --muted: #9eb1cb;
+  --accent: #22d3ee;
+  --accent2: #3b82f6;
+  --border: rgba(255,255,255,0.12);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 500px at 5% -10%, rgba(59,130,246,0.2), transparent 50%),
+    radial-gradient(1000px 600px at 95% 10%, rgba(34,211,238,0.2), transparent 45%),
+    linear-gradient(160deg, var(--bg), var(--bg2));
+}
+.hero { padding: 26px 20px 70px; border-bottom: 1px solid var(--border); }
+.nav {
+  max-width: 1120px;
+  margin: 0 auto 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand { font-weight: 800; letter-spacing: 0.3px; font-size: 1.1rem; }
+.actions { display: flex; gap: 10px; }
+.hero-content { max-width: 1120px; margin: 0 auto; }
+.hero-content h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.1; }
+.hero-content p { max-width: 760px; margin: 0 0 24px; color: var(--muted); font-size: 1.08rem; }
+.btn { border-radius: 10px; padding: 10px 14px; text-decoration: none; font-weight: 700; font-size: 0.92rem; }
+.btn-outline { border: 1px solid var(--border); color: var(--text); }
+.btn-link { color: var(--muted); }
+.btn-solid { background: linear-gradient(120deg, var(--accent), var(--accent2)); color: #021225; }
+main { max-width: 1120px; margin: 0 auto; padding: 36px 20px 60px; }
+.section { margin-bottom: 36px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+.card {
+  background: rgba(19,34,56,0.8);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+}
+.card h3 { margin-top: 0; }
+.card li { color: var(--muted); margin: 8px 0; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+.stat {
+  background: rgba(19,34,56,0.9);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.k { font-weight: 800; font-size: 1.6rem; }
+.l { color: var(--muted); font-size: 0.88rem; }
+.note { color: var(--muted); margin-top: 12px; }
+footer { text-align: center; color: var(--muted); border-top: 1px solid var(--border); padding: 18px; }
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}

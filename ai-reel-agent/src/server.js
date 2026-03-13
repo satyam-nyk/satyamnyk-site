@@ -156,6 +156,32 @@ function setupRoutes() {
     res.redirect('/dashboard/api/dashboard-data');
   });
 
+  app.get('/reel-agent', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/microsite.html'));
+  });
+
+  app.get('/dashboard-public-stats', async (req, res) => {
+    try {
+      const [postStats, insights] = await Promise.all([
+        database.getAllPostStats(),
+        database.getInsightsSummary(30),
+      ]);
+
+      const topMethod = insights?.methodSplit?.[0]?.method || null;
+      return res.json({
+        success: true,
+        data: {
+          totalPosts: postStats.total_posts || 0,
+          totalViews: postStats.total_views || 0,
+          avgEngagementRate: postStats.avg_engagement_rate || 0,
+          topMethod,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Health check endpoint
   app.get('/', (req, res) => {
     res.json({
