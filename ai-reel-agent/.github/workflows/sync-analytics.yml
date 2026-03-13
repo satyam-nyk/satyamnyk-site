@@ -27,12 +27,17 @@ jobs:
         id: sync
         run: |
           echo "Sending analytics sync request..."
+          BASE_URL="${{ secrets.WEBHOOK_BASE_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            echo "WEBHOOK_BASE_URL secret is missing"
+            exit 1
+          fi
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
             -H "Content-Type: application/json" \
             -H "User-Agent: GitHub-Actions" \
-            "${{ secrets.WEBHOOK_URL }}/sync-analytics")
+            "${BASE_URL}/sync-analytics")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -n -1)

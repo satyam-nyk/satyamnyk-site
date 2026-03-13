@@ -32,12 +32,17 @@ jobs:
         id: webhook
         run: |
           echo "Sending webhook request to trigger daily reel generation..."
+          BASE_URL="${{ secrets.WEBHOOK_BASE_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            echo "WEBHOOK_BASE_URL secret is missing"
+            exit 1
+          fi
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
             -H "Content-Type: application/json" \
             -H "User-Agent: GitHub-Actions" \
-            "${{ secrets.WEBHOOK_URL }}")
+            "${BASE_URL}/generate-daily-reel")
           
           # Extract status code (last line)
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
@@ -113,12 +118,17 @@ jobs:
         if: steps.check_day.outputs.is_sunday == '1'
         run: |
           echo "Sending batch processing webhook..."
+          BASE_URL="${{ secrets.WEBHOOK_BASE_URL }}"
+          if [ -z "$BASE_URL" ]; then
+            echo "WEBHOOK_BASE_URL secret is missing"
+            exit 1
+          fi
           
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.WEBHOOK_SECRET }}" \
             -H "Content-Type: application/json" \
             -H "User-Agent: GitHub-Actions" \
-            "${{ secrets.WEBHOOK_URL_BATCH }}")
+            "${BASE_URL}/batch-process")
           
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | head -n -1)
