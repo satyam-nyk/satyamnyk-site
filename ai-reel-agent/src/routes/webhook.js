@@ -307,6 +307,106 @@ export function createWebhookRouter(
     }
   });
 
+  /**
+   * POST /api/webhook/test-instagram-post
+   * Test endpoint to post a sample video with caption and hashtags
+   * For testing/debugging purposes only
+   */
+  router.post('/test-instagram-post', verifyWebhookSignature, async (req, res) => {
+    try {
+      console.log('[Webhook] Received test Instagram post request');
+
+      // Build caption with script and hashtags
+      const testScript = `🎯 AI-Generated Daily Content
+
+Today's trending topic brings practical insights:
+✨ Carefully researched information
+💡 Actionable tips for your growth  
+🚀 Join our community of smart followers
+
+What do you think? Drop your thoughts! 👇`;
+
+      const hashtags = INSTAGRAM_CONFIG.HASHTAGS.slice(0, 15).join(' ');
+      const caption = `${testScript}\n\n${hashtags}`;
+
+      console.log('[Webhook] Caption with hashtags:');
+      console.log('─'.repeat(60));
+      console.log(caption);
+      console.log('─'.repeat(60));
+      console.log(`Caption Length: ${caption.length}/${INSTAGRAM_CONFIG.CAPTION_MAX_LENGTH}`);
+
+      // Get any cached video for testing
+      let testVideoPath = null;
+      try {
+        const cachedVideo = await new Promise((resolve, reject) => {
+          const query = `
+            SELECT * FROM video_cache
+            ORDER BY generation_date DESC
+            LIMIT 1
+          `;
+          database.db.get(query, (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+          });
+        });
+
+        if (cachedVideo) {
+          testVideoPath = `./videos/${cachedVideo.video_file}`;
+          console.log('[Webhook] Using cached video:', cachedVideo.video_file);
+        }
+      } catch (err) {
+        console.warn('[Webhook] Could not find cached video:', err.message);
+      }
+
+      // Fallback to test video
+      if (!testVideoPath) {
+        testVideoPath = './videos/test_reel.mp4';
+        console.log('[Webhook] Using test video:', testVideoPath);
+      }
+
+      // Attempt to post
+      let instagramResult = null;
+      try {
+        instagramResult = await instagramService.postReel(testVideoPath, caption);
+      } catch (error) {
+        console.error('[Webhook] Instagram posting error:', error.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to post to Instagram',
+          details: error.message,
+        });
+      }
+
+      if (!instagramResult) {
+        return res.status(500).json({
+          success: false,
+          message: 'Instagram post returned null. Check credentials and API status.',
+        });
+      }
+
+      console.log('[Webhook] Test post successful');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Test post successful! Video posted with caption and hashtags.',
+        data: {
+          postId: instagramResult.postId,
+          mediaId: instagramResult.mediaId,
+          url: instagramResult.url,
+          captionLength: caption.length,
+          status: instagramResult.status,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('[Webhook] Error in test Instagram post:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+
   return router;
 }
 
