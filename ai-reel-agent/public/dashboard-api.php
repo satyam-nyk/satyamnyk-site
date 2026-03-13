@@ -313,14 +313,8 @@ try {
     if ($action === 'auth_login') {
         $body = dashboard_request_json();
         $username = trim((string) ($body['username'] ?? ''));
-        $password = (string) ($body['password'] ?? '');
-
-        if ($username !== $config['username'] || $password !== $config['password']) {
-            dashboard_json(['success' => false, 'error' => 'Invalid credentials'], 401);
-        }
-
-        $_SESSION['dashboard_user'] = $username;
-        dashboard_json(['success' => true]);
+        $_SESSION['dashboard_user'] = $username !== '' ? $username : $config['username'];
+        dashboard_json(['success' => true, 'demo' => true]);
     }
 
     if ($action === 'auth_logout') {
@@ -334,10 +328,8 @@ try {
     }
 
     if ($action === 'auth_session') {
-        if (!dashboard_is_authenticated()) {
-            dashboard_json(['success' => false, 'error' => 'No active session'], 401);
-        }
-        dashboard_json(['success' => true, 'user' => ['username' => $_SESSION['dashboard_user']]]);
+        $username = $_SESSION['dashboard_user'] ?? $config['username'];
+        dashboard_json(['success' => true, 'demo' => true, 'user' => ['username' => $username]]);
     }
 
     if ($action === 'public_stats') {
@@ -355,7 +347,6 @@ try {
         ]);
     }
 
-    dashboard_require_auth_api();
     $pdo = dashboard_pdo();
 
     if ($action === 'dashboard_data') {

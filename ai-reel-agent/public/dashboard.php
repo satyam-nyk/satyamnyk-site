@@ -1,6 +1,5 @@
 <?php
 require_once dirname(__DIR__) . '/dashboard-config.php';
-dashboard_require_auth_page();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,7 +23,7 @@ dashboard_require_auth_page();
                     Operational
                 </div>
                 <span class="last-updated">Last updated: <span id="updated-time">--</span></span>
-                <button class="btn btn-ghost" id="logout-btn" onclick="logoutDashboard()">Logout</button>
+                <button class="btn btn-ghost" id="logout-btn" onclick="window.location.href='microsite.html'">Back</button>
             </div>
         </header>
 

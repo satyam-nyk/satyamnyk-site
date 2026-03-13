@@ -1,17 +1,13 @@
 <?php
 require_once dirname(__DIR__) . '/dashboard-config.php';
-dashboard_start_session();
-if (dashboard_is_authenticated()) {
-    header('Location: dashboard.php');
-    exit;
-}
+$config = dashboard_config();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Reel Agent - Secure Login</title>
+  <title>AI Reel Agent - Dashboard Access</title>
   <style>
     :root {
       --bg: #090d18;
@@ -78,16 +74,16 @@ if (dashboard_is_authenticated()) {
 </head>
 <body>
   <form class="panel" id="login-form">
-    <h1>Secure Dashboard Login</h1>
-    <p>Only authorized users can access reel analytics and posting history.</p>
+    <h1>Dashboard Access (Demo)</h1>
+    <p>Credentials are prefilled for showcase mode. Click to open dashboard.</p>
 
     <label for="username">Username</label>
-    <input id="username" name="username" type="text" autocomplete="username" required />
+    <input id="username" name="username" type="text" autocomplete="username" required value="<?php echo htmlspecialchars($config['username'], ENT_QUOTES, 'UTF-8'); ?>" />
 
     <label for="password">Password</label>
-    <input id="password" name="password" type="password" autocomplete="current-password" required />
+    <input id="password" name="password" type="text" autocomplete="off" required value="<?php echo htmlspecialchars($config['password'], ENT_QUOTES, 'UTF-8'); ?>" />
 
-    <button type="submit">Access Dashboard</button>
+    <button type="submit">Open Dashboard</button>
     <div class="msg" id="msg"></div>
     <div class="links"><a href="microsite.html">Back to public microsite</a></div>
   </form>
@@ -95,33 +91,19 @@ if (dashboard_is_authenticated()) {
   <script>
     const form = document.getElementById('login-form');
     const msg = document.getElementById('msg');
+    const params = new URLSearchParams(window.location.search);
 
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
-      msg.textContent = '';
-
-      const username = form.username.value.trim();
-      const password = form.password.value;
-
-      try {
-        const res = await fetch('dashboard-api.php?action=auth_login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ username, password })
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) {
-          msg.textContent = data.error || 'Login failed';
-          return;
-        }
-
-        window.location.href = 'dashboard.php';
-      } catch (_err) {
-        msg.textContent = 'Login service unavailable on this host.';
-      }
+      window.location.href = 'dashboard.php';
     });
+
+    if (params.get('autologin') === '1') {
+      msg.textContent = 'Opening dashboard...';
+      setTimeout(() => {
+        window.location.href = 'dashboard.php';
+      }, 450);
+    }
   </script>
 </body>
 </html>
