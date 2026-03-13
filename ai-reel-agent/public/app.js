@@ -1,10 +1,16 @@
-function resolveApiBase() {
-  return window.location.origin.replace(/\/$/, '');
-}
-
-const API_BASE = resolveApiBase();
-const API_BASE_URL = `${API_BASE}/dashboard/api/dashboard-data`;
+const DASHBOARD_API = window.DASHBOARD_API_URL || 'dashboard-api.php';
 const REFRESH_INTERVAL = 30000;
+
+function apiUrl(action, params = {}) {
+  const url = new URL(DASHBOARD_API, window.location.href);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      url.searchParams.set(key, String(value));
+    }
+  });
+  return url.toString();
+}
 
 let engagementChart = null;
 let methodChart = null;
@@ -14,9 +20,9 @@ let currentLimit = 20;
 let currentTotal = 0;
 
 async function ensureSession() {
-  const response = await fetch(`${API_BASE}/dashboard/api/auth/session`, { credentials: 'include' });
+  const response = await fetch(apiUrl('auth_session'), { credentials: 'include' });
   if (!response.ok) {
-    window.location.href = 'dashboard-login.html';
+    window.location.href = 'dashboard-login.php';
     return false;
   }
   return true;
@@ -37,9 +43,9 @@ async function initDashboard() {
 
 async function updateDashboard() {
   try {
-    const response = await fetch(API_BASE_URL, { credentials: 'include' });
+    const response = await fetch(apiUrl('dashboard_data'), { credentials: 'include' });
     if (response.status === 401) {
-      window.location.href = 'dashboard-login.html';
+      window.location.href = 'dashboard-login.php';
       return;
     }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -314,12 +320,12 @@ async function reloadHistory() {
 
 async function loadHistory() {
   const status = document.getElementById('status-filter')?.value || 'all';
-  const url = `${API_BASE_URL}/posts?limit=${currentLimit}&offset=${currentOffset}&status=${encodeURIComponent(status)}`;
+  const url = apiUrl('post_history', { limit: currentLimit, offset: currentOffset, status });
 
   try {
     const response = await fetch(url, { credentials: 'include' });
     if (response.status === 401) {
-      window.location.href = 'dashboard-login.html';
+      window.location.href = 'dashboard-login.php';
       return;
     }
 
@@ -361,7 +367,7 @@ function renderHistory(rows) {
 
 async function showPostDetail(id) {
   try {
-    const response = await fetch(`${API_BASE_URL}/posts/${id}`, { credentials: 'include' });
+    const response = await fetch(apiUrl('post_detail', { id }), { credentials: 'include' });
     const payload = await response.json();
     if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to load post detail');
 
@@ -398,43 +404,12 @@ function nextPage() {
 }
 
 async function triggerManualPost() {
-  const btn = document.getElementById('manual-post-btn');
-  const originalText = btn.textContent;
-
-  try {
-    btn.disabled = true;
-    btn.textContent = 'Posting...';
-
-    const response = await fetch(`${API_BASE}/api/webhook/manual-post`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${getWebhookSecret()}`,
-      },
-      credentials: 'include',
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Failed to post');
-
-    showToast('Manual post triggered', 'success');
-    await updateDashboard();
-    await loadHistory();
-  } catch (error) {
-    showToast(`Error: ${error.message}`, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
+  showToast('Manual posting is unavailable on Hostinger shared hosting.', 'error');
 }
 
 async function logoutDashboard() {
-  await fetch(`${API_BASE}/dashboard/api/auth/logout`, { method: 'POST', credentials: 'include' });
-  window.location.href = 'dashboard-login.html';
-}
-
-function getWebhookSecret() {
-  return localStorage.getItem('webhook-secret') || '';
+  await fetch(apiUrl('auth_logout'), { method: 'POST', credentials: 'include' });
+  window.location.href = 'dashboard-login.php';
 }
 
 function formatNumber(num) {

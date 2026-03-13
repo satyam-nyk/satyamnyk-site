@@ -4,14 +4,12 @@ function fmt(n) {
 }
 
 function syncLoginLinks() {
-  const apiBase = window.location.origin;
   document.querySelectorAll('[data-login-link]').forEach((a) => {
-    a.href = `${apiBase}/ai-reel-agent/public/dashboard-login.html`;
+    a.href = 'dashboard-login.php';
   });
 }
 
 async function loadPublicStats() {
-  const apiBase = window.location.origin;
   const postEl = document.getElementById('k-posts');
   const viewsEl = document.getElementById('k-views');
   const engEl = document.getElementById('k-eng');
@@ -23,14 +21,7 @@ async function loadPublicStats() {
   methodEl.textContent = '...';
 
   try {
-    const res = await fetch(`${apiBase}/api/health`);
-    await res.json();
-  } catch (_) {
-    // health endpoint not essential for this public page
-  }
-
-  try {
-    const statsRes = await fetch(`${apiBase}/dashboard-public-stats`);
+    const statsRes = await fetch('dashboard-public-stats.php');
     const data = await statsRes.json();
     if (!statsRes.ok || !data.success) throw new Error('stats unavailable');
 

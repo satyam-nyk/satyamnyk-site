@@ -1,0 +1,127 @@
+<?php
+require_once dirname(__DIR__) . '/dashboard-config.php';
+dashboard_start_session();
+if (dashboard_is_authenticated()) {
+    header('Location: dashboard.php');
+    exit;
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Reel Agent - Secure Login</title>
+  <style>
+    :root {
+      --bg: #090d18;
+      --bg2: #101829;
+      --card: #141f35;
+      --text: #f3f7ff;
+      --muted: #9fb0cc;
+      --accent: #2dd4bf;
+      --accent2: #60a5fa;
+      --danger: #f87171;
+      --border: rgba(255,255,255,0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 0% 0%, rgba(96,165,250,0.18), transparent 45%),
+        radial-gradient(900px 500px at 100% 100%, rgba(45,212,191,0.15), transparent 45%),
+        linear-gradient(160deg, var(--bg), var(--bg2));
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+    .panel {
+      width: min(420px, 100%);
+      background: rgba(20,31,53,0.88);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 28px 70px rgba(0,0,0,0.45);
+    }
+    h1 { margin: 0 0 8px; font-size: 1.6rem; }
+    p { margin: 0 0 18px; color: var(--muted); }
+    label { display: block; margin: 14px 0 8px; font-size: 0.92rem; color: var(--muted); }
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      color: var(--text);
+      background: #0d1527;
+      outline: none;
+    }
+    input:focus { border-color: var(--accent2); }
+    button {
+      width: 100%;
+      margin-top: 18px;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-weight: 700;
+      color: #05232b;
+      background: linear-gradient(120deg, var(--accent), var(--accent2));
+      cursor: pointer;
+    }
+    .msg { margin-top: 12px; min-height: 20px; font-size: 0.9rem; color: var(--danger); }
+    .links { margin-top: 16px; text-align: center; }
+    .links a { color: var(--accent2); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <form class="panel" id="login-form">
+    <h1>Secure Dashboard Login</h1>
+    <p>Only authorized users can access reel analytics and posting history.</p>
+
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required />
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+    <button type="submit">Access Dashboard</button>
+    <div class="msg" id="msg"></div>
+    <div class="links"><a href="microsite.html">Back to public microsite</a></div>
+  </form>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const msg = document.getElementById('msg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+
+      const username = form.username.value.trim();
+      const password = form.password.value;
+
+      try {
+        const res = await fetch('dashboard-api.php?action=auth_login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          msg.textContent = data.error || 'Login failed';
+          return;
+        }
+
+        window.location.href = 'dashboard.php';
+      } catch (_err) {
+        msg.textContent = 'Login service unavailable on this host.';
+      }
+    });
+  </script>
+</body>
+</html>
