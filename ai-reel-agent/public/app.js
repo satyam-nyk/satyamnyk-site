@@ -1,52 +1,40 @@
-// Base path to Node dashboard API — works both locally and on Render
-const API_BASE = '/dashboard/api';
-const REFRESH_INTERVAL = 30000;
-
-function apiUrl(action, params = {}) {
-  const map = {
-    auth_session:   `${API_BASE}/auth/session`,
-    auth_login:     `${API_BASE}/auth/login`,
-    auth_logout:    `${API_BASE}/auth/logout`,
-    dashboard_data: `${API_BASE}/dashboard-data`,
-    post_history:   `${API_BASE}/dashboard-data/posts`,
-    post_detail:    (p) => `${API_BASE}/dashboard-data/posts/${p.id}`,
-    public_stats:   '/dashboard-public-stats',
-  };
-  const base = typeof map[action] === 'function' ? map[action](params) : (map[action] || `${API_BASE}/${action}`);
-  const url = new URL(base, window.location.href);
-  Object.entries(params).forEach(([key, value]) => {
-    if (key !== 'id' && value !== undefined && value !== null) {
-      url.searchParams.set(key, String(value));
-    }
-  });
-  return url.toString();
-}
+const SNAPSHOT_URL = 'dashboard-data.json';
+const PAGE_SIZE = 20;
 
 let engagementChart = null;
 let methodChart = null;
-let updateTimeout = null;
+let snapshot = null;
+let filteredHistory = [];
 let currentOffset = 0;
-let currentLimit = 20;
-let currentTotal = 0;
 
-async function initDashboard() {
-  await updateDashboard();
-  await reloadHistory();
+function snapshotUrl() {
+  return `${SNAPSHOT_URL}?t=${Date.now()}`;
 }
 
-async function updateDashboard() {
+async function initDashboard() {
+  await refreshSnapshot();
+}
+
+async function refreshSnapshot(showMessage = false) {
   try {
-    const response = await fetch(apiUrl('dashboard_data'), { credentials: 'include' });
+    const response = await fetch(snapshotUrl(), { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
-    if (!data.success) throw new Error(data.error || 'Unknown error');
+    if (!data.success) throw new Error(data.error || 'Snapshot unavailable');
 
+    snapshot = data;
     updateUI(data);
-    updateTime();
+    currentOffset = 0;
+    loadHistory();
+    updateTime(data.generatedAt);
+
+    if (showMessage) {
+      showToast('Dashboard snapshot refreshed.', 'success');
+    }
   } catch (error) {
-    console.error('[Dashboard] Error updating:', error);
-    showToast('Failed to update dashboard', 'error');
+    console.error('[Dashboard] Snapshot error:', error);
+    showToast('Failed to load dashboard snapshot', 'error');
   }
 }
 
@@ -56,7 +44,7 @@ function updateUI(data) {
   updateStatistics(data.stats, data.insights);
   updateQueue(data.queue);
   updateCache(data.cache);
-  updateEngagementChart(data.analytics);
+  updateEngagementChart(data.analytics || []);
   updateTrendingTopics(data.insights?.topTopics || data.trendingTopics || []);
   updateMethodChart(data.insights?.methodSplit || []);
   updateRecommendations(data.recommendations || null);
@@ -73,40 +61,36 @@ function hourTo12h(hourStr) {
 
 function weekdayName(dayStr) {
   const map = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const i = Number(dayStr);
-  return Number.isNaN(i) ? '--' : (map[i] || '--');
+  const index = Number(dayStr);
+  return Number.isNaN(index) ? '--' : (map[index] || '--');
 }
 
 function updateRecommendations(data) {
   if (!data) return;
 
-  const bestHour = data.bestHour;
-  const bestDay = data.bestDay;
-  const cadence = data.cadence || {};
-
   const bestHourEl = document.getElementById('best-hour');
   const bestHourMeta = document.getElementById('best-hour-meta');
-  if (bestHourEl) bestHourEl.textContent = bestHour ? hourTo12h(bestHour.hour) : '--';
+  if (bestHourEl) bestHourEl.textContent = data.bestHour ? hourTo12h(data.bestHour.hour) : '--';
   if (bestHourMeta) {
-    bestHourMeta.textContent = bestHour
-      ? `avg eng ${Number(bestHour.avg_engagement || 0).toFixed(2)}% • ${bestHour.posts || 0} posts`
+    bestHourMeta.textContent = data.bestHour
+      ? `avg eng ${Number(data.bestHour.avg_engagement || 0).toFixed(2)}% • ${data.bestHour.posts || 0} posts`
       : 'Not enough data';
   }
 
   const bestDayEl = document.getElementById('best-day');
   const bestDayMeta = document.getElementById('best-day-meta');
-  if (bestDayEl) bestDayEl.textContent = bestDay ? weekdayName(bestDay.day) : '--';
+  if (bestDayEl) bestDayEl.textContent = data.bestDay ? weekdayName(data.bestDay.day) : '--';
   if (bestDayMeta) {
-    bestDayMeta.textContent = bestDay
-      ? `avg eng ${Number(bestDay.avg_engagement || 0).toFixed(2)}% • ${bestDay.posts || 0} posts`
+    bestDayMeta.textContent = data.bestDay
+      ? `avg eng ${Number(data.bestDay.avg_engagement || 0).toFixed(2)}% • ${data.bestDay.posts || 0} posts`
       : 'Not enough data';
   }
 
   const cadencePosts = document.getElementById('cadence-posts');
   const cadenceMeta = document.getElementById('cadence-meta');
-  if (cadencePosts) cadencePosts.textContent = `${cadence.posts_last_7 || 0} posts`;
+  if (cadencePosts) cadencePosts.textContent = `${data.cadence?.posts_last_7 || 0} posts`;
   if (cadenceMeta) {
-    cadenceMeta.textContent = `avg views ${formatNumber(cadence.avg_views_last_7 || 0)} • avg eng ${Number(cadence.avg_engagement_last_7 || 0).toFixed(2)}%`;
+    cadenceMeta.textContent = `avg views ${formatNumber(data.cadence?.avg_views_last_7 || 0)} • avg eng ${Number(data.cadence?.avg_engagement_last_7 || 0).toFixed(2)}%`;
   }
 
   const momentum = document.getElementById('momentum-topics');
@@ -117,37 +101,32 @@ function updateRecommendations(data) {
     return;
   }
 
-  momentum.innerHTML = rows.map((row, idx) => {
-    const score = Number(row.momentum_score || 0).toFixed(2);
-    const recent = formatNumber(row.recent_avg_views || 0);
-    const previous = formatNumber(row.previous_avg_views || 0);
-    return `
-      <div class="recommend-item">
-        <span class="recommend-rank">#${idx + 1}</span>
-        <div class="recommend-topic-wrap">
-          <span class="recommend-topic">${escapeHtml(row.topic || 'Unknown')}</span>
-          <span class="recommend-topic-meta">momentum ${score}% • recent ${recent} vs prev ${previous}</span>
-        </div>
+  momentum.innerHTML = rows.map((row, index) => `
+    <div class="recommend-item">
+      <span class="recommend-rank">#${index + 1}</span>
+      <div class="recommend-topic-wrap">
+        <span class="recommend-topic">${escapeHtml(row.topic || 'Unknown')}</span>
+        <span class="recommend-topic-meta">momentum ${Number(row.momentum_score || 0).toFixed(2)}% • recent ${formatNumber(row.recent_avg_views || 0)} vs prev ${formatNumber(row.previous_avg_views || 0)}</span>
       </div>
-    `;
-  }).join('');
+    </div>
+  `).join('');
 }
 
 function updateTodaySection(today) {
-  if (!today) return;
-
-  const post = today.post;
+  const post = today?.post;
   const statusBadge = document.getElementById('today-status');
-  statusBadge.textContent = post?.status?.toUpperCase() || 'NOT STARTED';
-  statusBadge.className = `status-badge ${post?.status || 'pending'}`;
+  if (statusBadge) {
+    statusBadge.textContent = post?.status?.toUpperCase() || 'NOT STARTED';
+    statusBadge.className = `status-badge ${post?.status || 'pending'}`;
+  }
 
   document.getElementById('today-topic').textContent = post?.topic || 'Waiting for generation...';
-  document.getElementById('today-script').textContent = post?.script || 'Script will appear here';
+  document.getElementById('today-script').textContent = post?.script || 'Run npm run dashboard:refresh to build the latest snapshot.';
   document.getElementById('today-generator').textContent = post?.generation_method || '--';
   document.getElementById('today-post-id').textContent = post?.instagram_post_id || '--';
-
-  const postedEl = document.getElementById('today-posted');
-  postedEl.textContent = post?.posted_at ? new Date(post.posted_at).toLocaleTimeString() : '--';
+  document.getElementById('today-posted').textContent = post?.posted_at
+    ? new Date(post.posted_at).toLocaleTimeString()
+    : '--';
 }
 
 function updateAPIUsage(apiUsage) {
@@ -157,36 +136,37 @@ function updateAPIUsage(apiUsage) {
   updateAPIBar('instagram', apiUsage.instagram);
 }
 
-function updateAPIBar(service, data) {
+function updateAPIBar(service, data = {}) {
   const denominator = data.limit || data.total || 1;
-  const percentUsed = Math.round((data.used / denominator) * 100) || 0;
+  const percentUsed = denominator > 0 ? Math.round(((data.used || 0) / denominator) * 100) : 0;
 
   const progressEl = document.getElementById(`${service}-progress`);
   if (progressEl) progressEl.style.width = `${percentUsed}%`;
 
-  document.getElementById(`${service}-used`).textContent = data.used;
-  document.getElementById(`${service}-limit`).textContent = denominator;
+  const usedEl = document.getElementById(`${service}-used`);
+  const limitEl = document.getElementById(`${service}-limit`);
+  if (usedEl) usedEl.textContent = data.used || 0;
+  if (limitEl) limitEl.textContent = denominator;
 
   const statusEl = document.getElementById(`${service}-status`);
+  if (!statusEl) return;
   statusEl.className = 'status-light';
   if (percentUsed >= 80) statusEl.classList.add('danger');
   else if (percentUsed >= 60) statusEl.classList.add('warning');
   else statusEl.classList.add('healthy');
 }
 
-function updateStatistics(stats, insights) {
-  if (!stats) return;
-  document.getElementById('total-posts').textContent = formatNumber(stats.totalPosts);
-  document.getElementById('total-views').textContent = formatNumber(stats.totalViews);
-  document.getElementById('avg-engagement').textContent = `${(stats.avgEngagementRate || 0).toFixed(2)}%`;
+function updateStatistics(stats = {}, insights = {}) {
+  document.getElementById('total-posts').textContent = formatNumber(stats.totalPosts || 0);
+  document.getElementById('total-views').textContent = formatNumber(stats.totalViews || 0);
+  document.getElementById('avg-engagement').textContent = `${Number(stats.avgEngagementRate || 0).toFixed(2)}%`;
 
   const posted = insights?.kpi?.posted_count || 0;
   const failed = insights?.kpi?.failed_count || 0;
   document.getElementById('posted-failed').textContent = `${posted} / ${failed}`;
 }
 
-function updateQueue(queue) {
-  if (!queue) return;
+function updateQueue(queue = {}) {
   const pending = queue.pending || 0;
   const posted = queue.posted || 0;
   const total = pending + posted;
@@ -198,24 +178,25 @@ function updateQueue(queue) {
   document.getElementById('queue-progress').style.width = `${percent}%`;
 }
 
-function updateCache(cache) {
-  if (!cache) return;
-  document.getElementById('cache-total').textContent = cache.totalCached;
-  document.getElementById('cache-reuses').textContent = cache.totalReuses;
-  document.getElementById('cache-avg').textContent = (cache.avgReuses || 0).toFixed(1);
+function updateCache(cache = {}) {
+  document.getElementById('cache-total').textContent = formatNumber(cache.totalCached || 0);
+  document.getElementById('cache-reuses').textContent = formatNumber(cache.totalReuses || 0);
+  document.getElementById('cache-avg').textContent = Number(cache.avgReuses || 0).toFixed(1);
 }
 
 function updateEngagementChart(analytics) {
-  if (!analytics || analytics.length === 0) return;
-
-  const labels = analytics.map((a) => formatDate(a.date)).reverse();
-  const views = analytics.map((a) => a.totalViews).reverse();
-  const likes = analytics.map((a) => a.totalLikes).reverse();
-  const comments = analytics.map((a) => a.totalComments).reverse();
-
   const ctx = document.getElementById('engagementChart');
   if (!ctx) return;
   if (engagementChart) engagementChart.destroy();
+
+  if (!analytics || !analytics.length) {
+    return;
+  }
+
+  const labels = analytics.map((row) => formatDate(row.date)).reverse();
+  const reach = analytics.map((row) => row.totalViews || 0).reverse();
+  const likes = analytics.map((row) => row.totalLikes || 0).reverse();
+  const comments = analytics.map((row) => row.totalComments || 0).reverse();
 
   engagementChart = new Chart(ctx, {
     type: 'line',
@@ -223,8 +204,8 @@ function updateEngagementChart(analytics) {
       labels,
       datasets: [
         {
-          label: 'Views',
-          data: views,
+          label: 'Reach',
+          data: reach,
           borderColor: '#6366f1',
           backgroundColor: 'rgba(99, 102, 241, 0.1)',
           tension: 0.4,
@@ -264,8 +245,9 @@ function updateMethodChart(split) {
   if (!ctx) return;
   if (methodChart) methodChart.destroy();
 
-  const labels = split.map((s) => s.method || 'unknown');
-  const values = split.map((s) => s.count || 0);
+  const labels = split.map((row) => row.method || 'unknown');
+  const values = split.map((row) => row.count || 0);
+  if (!values.length) return;
 
   methodChart = new Chart(ctx, {
     type: 'doughnut',
@@ -285,7 +267,7 @@ function updateMethodChart(split) {
 function updateTrendingTopics(topics) {
   const container = document.getElementById('trending-topics');
   if (!container) return;
-  if (!topics || topics.length === 0) {
+  if (!topics || !topics.length) {
     container.innerHTML = '<p class="loading">No trending topics yet</p>';
     return;
   }
@@ -294,128 +276,118 @@ function updateTrendingTopics(topics) {
     <div class="trending-item">
       <div><span class="topic-name">#${index + 1} ${escapeHtml(topic.topic || 'Unknown')}</span></div>
       <div class="topic-stats">
-        <span title="Post Count">📊 ${topic.posts || topic.usage_count || 0}</span>
-        <span title="Average Views">👁️ ${formatNumber(topic.avg_views || 0)}</span>
-        <span title="Avg Engagement">💬 ${(topic.avg_engagement_rate || 0).toFixed(2)}%</span>
+        <span>📊 ${topic.posts || topic.usage_count || 0}</span>
+        <span>👁️ ${formatNumber(topic.avg_views || 0)}</span>
+        <span>💬 ${Number(topic.avg_engagement_rate || 0).toFixed(2)}%</span>
       </div>
     </div>
   `).join('');
 }
 
 async function reloadHistory() {
-  currentOffset = 0;
-  await updateDashboard();
-  await loadHistory();
+  await refreshSnapshot(true);
 }
 
-async function loadHistory() {
+function applyHistoryFilter() {
+  const rows = snapshot?.history || [];
   const status = document.getElementById('status-filter')?.value || 'all';
-  const url = apiUrl('post_history', { limit: currentLimit, offset: currentOffset, status });
+  filteredHistory = status === 'all' ? rows : rows.filter((row) => row.status === status);
+}
 
-  try {
-    const response = await fetch(url, { credentials: 'include' });
+function loadHistory() {
+  applyHistoryFilter();
+  const body = document.getElementById('history-body');
+  if (!body) return;
 
-    const payload = await response.json();
-    if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to load history');
+  currentOffset = Math.min(currentOffset, Math.max(0, filteredHistory.length - PAGE_SIZE));
+  const rows = filteredHistory.slice(currentOffset, currentOffset + PAGE_SIZE);
 
-    const rows = payload.data || [];
-    currentTotal = payload.pagination?.total || 0;
-    renderHistory(rows);
-
-    const page = Math.floor(currentOffset / currentLimit) + 1;
-    const pages = Math.max(1, Math.ceil(currentTotal / currentLimit));
-    document.getElementById('page-indicator').textContent = `Page ${page} of ${pages}`;
-  } catch (error) {
-    console.error('[Dashboard] History error:', error);
-    showToast('Failed to load post history', 'error');
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="9">No posts found.</td></tr>';
+  } else {
+    body.innerHTML = rows.map((row) => {
+      const sc = instagramShortcode(row.instagram_post_id);
+      const link = sc
+        ? `<a href="https://www.instagram.com/reel/${sc}/" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View on Instagram">↗ View</a>`
+        : '--';
+      return `
+        <tr onclick="showPostDetail(${row.id})">
+          <td>${formatDate(row.date)}</td>
+          <td>${escapeHtml((row.topic || '--').slice(0, 50))}</td>
+          <td><span class="table-status ${row.status || 'pending'}">${(row.status || 'pending').toUpperCase()}</span></td>
+          <td>${formatNumber(row.views || 0)}</td>
+          <td>${formatNumber(row.likes || 0)}</td>
+          <td>${formatNumber(row.comments || 0)}</td>
+          <td>${formatNumber(row.shares || 0)}</td>
+          <td>${Number(row.engagement_rate || 0).toFixed(2)}%</td>
+          <td>${link}</td>
+        </tr>`;
+    }).join('');
   }
+
+  const page = Math.floor(currentOffset / PAGE_SIZE) + 1;
+  const pages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE));
+  document.getElementById('page-indicator').textContent = `Page ${page} of ${pages}`;
 }
 
 function instagramShortcode(postId) {
   if (!postId) return null;
   const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-  let n = BigInt(postId);
-  let s = '';
-  while (n > 0n) { s = alpha[Number(n % 64n)] + s; n /= 64n; }
-  return s;
+  let number = BigInt(postId);
+  let result = '';
+  while (number > 0n) {
+    result = alpha[Number(number % 64n)] + result;
+    number /= 64n;
+  }
+  return result;
 }
 
-function renderHistory(rows) {
-  const body = document.getElementById('history-body');
-  if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="9">No posts found.</td></tr>';
-    return;
-  }
+function showPostDetail(id) {
+  const post = (snapshot?.history || []).find((row) => Number(row.id) === Number(id));
+  const detail = document.getElementById('post-detail');
+  if (!detail || !post) return;
 
-  body.innerHTML = rows.map((row) => {
-    const sc = instagramShortcode(row.instagram_post_id);
-    const link = sc
-      ? `<a href="https://www.instagram.com/reel/${sc}/" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View on Instagram">↗ View</a>`
-      : '--';
-    return `
-    <tr onclick="showPostDetail(${row.id})">
-      <td>${formatDate(row.date)}</td>
-      <td>${escapeHtml((row.topic || '--').slice(0, 50))}</td>
-      <td><span class="table-status ${row.status || 'pending'}">${(row.status || 'pending').toUpperCase()}</span></td>
-      <td>${formatNumber(row.views || 0)}</td>
-      <td>${formatNumber(row.likes || 0)}</td>
-      <td>${formatNumber(row.comments || 0)}</td>
-      <td>${formatNumber(row.shares || 0)}</td>
-      <td>${(row.engagement_rate || 0).toFixed(2)}%</td>
-      <td>${link}</td>
-    </tr>`;
-  }).join('');
-}
+  const shortcode = instagramShortcode(post.instagram_post_id);
+  const instagramBlock = shortcode
+    ? `<p><strong>Instagram:</strong> <a href="https://www.instagram.com/reel/${shortcode}/" target="_blank" rel="noopener">View Reel ↗</a></p>`
+    : `<p><strong>Instagram Post ID:</strong> ${escapeHtml(post.instagram_post_id || '--')}</p>`;
 
-async function showPostDetail(id) {
-  try {
-    const response = await fetch(apiUrl('post_detail', { id }), { credentials: 'include' });
-    const payload = await response.json();
-    if (!response.ok || !payload.success) throw new Error(payload.error || 'Failed to load post detail');
-
-    const p = payload.data;
-    const detail = document.getElementById('post-detail');
-    detail.innerHTML = `
-      <h3>${escapeHtml(p.topic || 'Untitled')}</h3>
-      <p><strong>Date:</strong> ${formatDate(p.date)}</p>
-      <p><strong>Status:</strong> ${(p.status || 'pending').toUpperCase()}</p>
-      <p><strong>Method:</strong> ${escapeHtml(p.generation_method || '--')}</p>
-      ${(() => { const sc = instagramShortcode(p.instagram_post_id); return sc ? `<p><strong>Instagram:</strong> <a href="https://www.instagram.com/reel/${sc}/" target="_blank" rel="noopener">View Reel ↗</a></p>` : `<p><strong>Instagram Post ID:</strong> ${escapeHtml(p.instagram_post_id || '--')}</p>`; })()}
-      <p><strong>Reach:</strong> ${formatNumber(p.views || 0)} | <strong>Likes:</strong> ${formatNumber(p.likes || 0)}</p>
-      <p><strong>Comments:</strong> ${formatNumber(p.comments || 0)} | <strong>Shares:</strong> ${formatNumber(p.shares || 0)}</p>
-      <p><strong>Engagement:</strong> ${(p.engagement_rate || 0).toFixed(2)}%</p>
-      <h4>Script</h4>
-      <div class="detail-script">${escapeHtml(p.script || '--')}</div>
-    `;
-  } catch (error) {
-    console.error('[Dashboard] Detail error:', error);
-    showToast('Failed to load selected post detail', 'error');
-  }
+  detail.innerHTML = `
+    <h3>${escapeHtml(post.topic || 'Untitled')}</h3>
+    <p><strong>Date:</strong> ${formatDate(post.date)}</p>
+    <p><strong>Status:</strong> ${(post.status || 'pending').toUpperCase()}</p>
+    <p><strong>Method:</strong> ${escapeHtml(post.generation_method || '--')}</p>
+    ${instagramBlock}
+    <p><strong>Reach:</strong> ${formatNumber(post.views || 0)} | <strong>Likes:</strong> ${formatNumber(post.likes || 0)}</p>
+    <p><strong>Comments:</strong> ${formatNumber(post.comments || 0)} | <strong>Shares:</strong> ${formatNumber(post.shares || 0)}</p>
+    <p><strong>Engagement:</strong> ${Number(post.engagement_rate || 0).toFixed(2)}%</p>
+    <h4>Script</h4>
+    <div class="detail-script">${escapeHtml(post.script || '--')}</div>
+  `;
 }
 
 function prevPage() {
   if (currentOffset <= 0) return;
-  currentOffset = Math.max(0, currentOffset - currentLimit);
+  currentOffset = Math.max(0, currentOffset - PAGE_SIZE);
   loadHistory();
 }
 
 function nextPage() {
-  if (currentOffset + currentLimit >= currentTotal) return;
-  currentOffset += currentLimit;
+  if (currentOffset + PAGE_SIZE >= filteredHistory.length) return;
+  currentOffset += PAGE_SIZE;
   loadHistory();
 }
 
-async function triggerManualPost() {
-  showToast('Local-only mode: run the pipeline from your laptop, then refresh this dashboard.', 'info');
+function triggerManualPost() {
+  showToast('Run npm run dashboard:refresh on your laptop, then push the updated snapshot.', 'info');
 }
 
-async function logoutDashboard() {
-  window.location.href = '/microsite.html';
+function logoutDashboard() {
+  window.location.href = 'microsite.html';
 }
 
 function formatNumber(num) {
-  if (!num) return '0';
-  return Math.round(num).toLocaleString();
+  return Math.round(Number(num || 0)).toLocaleString();
 }
 
 function formatDate(dateStr) {
@@ -424,9 +396,9 @@ function formatDate(dateStr) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function updateTime() {
-  const now = new Date();
-  document.getElementById('updated-time').textContent = now.toLocaleTimeString();
+function updateTime(timestamp) {
+  const value = timestamp ? new Date(timestamp) : new Date();
+  document.getElementById('updated-time').textContent = value.toLocaleString();
 }
 
 function showToast(message, type = 'info') {
@@ -448,13 +420,12 @@ function escapeHtml(str) {
 }
 
 window.addEventListener('beforeunload', () => {
-  if (updateTimeout) clearInterval(updateTimeout);
   if (engagementChart) engagementChart.destroy();
   if (methodChart) methodChart.destroy();
 });
 
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) updateDashboard();
+  if (!document.hidden) refreshSnapshot();
 });
 
 if (document.readyState === 'loading') {

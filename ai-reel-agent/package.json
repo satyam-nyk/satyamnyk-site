@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "migrate": "node scripts/migrate.js"
+    "migrate": "node scripts/migrate.js",
+    "dashboard:refresh": "node scripts/refresh-dashboard.js"
   },
   "keywords": [
     "ai",

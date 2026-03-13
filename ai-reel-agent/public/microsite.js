@@ -5,7 +5,7 @@ function fmt(n) {
 
 function syncLoginLinks() {
   document.querySelectorAll('[data-login-link]').forEach((a) => {
-    a.href = '/dashboard/';
+    a.href = 'dashboard.html';
   });
 }
 
@@ -21,14 +21,14 @@ async function loadPublicStats() {
   methodEl.textContent = '...';
 
   try {
-    const statsRes = await fetch('/dashboard-public-stats');
+    const statsRes = await fetch(`dashboard-data.json?t=${Date.now()}`);
     const data = await statsRes.json();
     if (!statsRes.ok || !data.success) throw new Error('stats unavailable');
 
-    postEl.textContent = fmt(data.data.totalPosts);
-    viewsEl.textContent = fmt(data.data.totalViews);
-    engEl.textContent = `${data.data.avgEngagementRate || 0}%`;
-    methodEl.textContent = data.data.topMethod || '--';
+    postEl.textContent = fmt(data.stats?.totalPosts || 0);
+    viewsEl.textContent = fmt(data.stats?.totalViews || 0);
+    engEl.textContent = `${data.stats?.avgEngagementRate || 0}%`;
+    methodEl.textContent = data.insights?.methodSplit?.[0]?.method || '--';
   } catch (e) {
     console.error('public stats error', e);
     postEl.textContent = '--';

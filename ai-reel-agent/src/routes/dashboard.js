@@ -9,7 +9,7 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
   const requireAuth = (req, res, next) => next();
 
   router.get('/login', (req, res) => {
-    res.redirect('/dashboard/');
+    res.redirect('/dashboard.html');
   });
 
   router.post('/api/auth/login', (req, res) => {
@@ -29,7 +29,7 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
    * Serve the dashboard HTML file
    */
   router.get('/', (req, res) => {
-    return res.sendFile(new URL('../../public/dashboard.html', import.meta.url).pathname);
+    return res.redirect('/dashboard.html');
   });
 
   /**

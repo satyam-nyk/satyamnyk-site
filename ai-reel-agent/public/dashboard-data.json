@@ -1,0 +1,188 @@
+{
+  "success": true,
+  "generatedAt": "2026-03-13T14:42:52.478Z",
+  "today": {
+    "date": "2026-03-13",
+    "post": {
+      "id": 4,
+      "date": "2026-03-13",
+      "topic": "Quick Healthy Recipes",
+      "script": "You won't believe what I just discovered about Quick Healthy Recipes! 🤯\n        \n        Most people don't know this, but...\n        \n        If you want to learn more about Quick Healthy Recipes, this might surprise you.\n        \n        Comment below what you think! 👇",
+      "video_id": "reel_2026-03-13_ljuwg36zj",
+      "instagram_post_id": "18568329523006833",
+      "views": 3,
+      "likes": 1,
+      "comments": 0,
+      "shares": 0,
+      "status": "posted",
+      "generation_method": "stock-video-free",
+      "posted_at": "2026-03-13 08:34:46",
+      "created_at": "2026-03-13 06:44:33",
+      "updated_at": "2026-03-13 14:42:52"
+    },
+    "status": "posted"
+  },
+  "stats": {
+    "totalPosts": 1,
+    "totalViews": 3,
+    "totalLikes": 1,
+    "totalComments": 0,
+    "totalShares": 0,
+    "avgViews": 3,
+    "avgEngagementRate": 0.3333
+  },
+  "apiUsage": {
+    "gemini": {
+      "used": 0,
+      "remaining": 50,
+      "limit": 50,
+      "status": "healthy"
+    },
+    "heygen": {
+      "used": 0,
+      "remaining": 10,
+      "total": 10,
+      "status": "healthy"
+    },
+    "instagram": {
+      "used": 2,
+      "remaining": 198,
+      "limit": 200,
+      "status": "healthy"
+    }
+  },
+  "queue": {
+    "total": 0,
+    "pending": 0,
+    "posted": 0
+  },
+  "cache": {
+    "totalCached": 8,
+    "totalReuses": 1,
+    "avgReuses": 0.125,
+    "methodsUsed": 0
+  },
+  "trendingTopics": [
+    {
+      "topic": "Quick Healthy Recipes",
+      "posts": 1,
+      "avg_views": 3,
+      "avg_engagement_rate": 33.33
+    },
+    {
+      "topic": "Money-Saving Tips",
+      "posts": 1,
+      "avg_views": 0,
+      "avg_engagement_rate": null
+    }
+  ],
+  "analytics": [],
+  "insights": {
+    "kpi": {
+      "total_posts": 2,
+      "posted_count": 1,
+      "failed_count": 0,
+      "total_views": 3,
+      "total_likes": 1,
+      "total_comments": 0,
+      "total_shares": 0,
+      "avg_engagement_rate": 33.33
+    },
+    "topTopics": [
+      {
+        "topic": "Quick Healthy Recipes",
+        "posts": 1,
+        "avg_views": 3,
+        "avg_engagement_rate": 33.33
+      },
+      {
+        "topic": "Money-Saving Tips",
+        "posts": 1,
+        "avg_views": 0,
+        "avg_engagement_rate": null
+      }
+    ],
+    "methodSplit": [
+      {
+        "method": "stock-video-free",
+        "count": 1
+      },
+      {
+        "method": "cached",
+        "count": 1
+      }
+    ]
+  },
+  "recommendations": {
+    "bestHour": {
+      "hour": "08",
+      "posts": 1,
+      "avg_views": 3,
+      "avg_engagement": 33.33
+    },
+    "bestDay": {
+      "day": "5",
+      "posts": 1,
+      "avg_views": 3,
+      "avg_engagement": 33.33
+    },
+    "momentumTopics": [
+      {
+        "topic": "Quick Healthy Recipes",
+        "recent_posts": 1,
+        "recent_avg_views": 3,
+        "previous_avg_views": null,
+        "momentum_score": 300
+      }
+    ],
+    "cadence": {
+      "posts_last_7": 1,
+      "avg_views_last_7": 3,
+      "avg_engagement_last_7": 33.33
+    }
+  },
+  "history": [
+    {
+      "id": 4,
+      "date": "2026-03-13",
+      "topic": "Quick Healthy Recipes",
+      "script": "You won't believe what I just discovered about Quick Healthy Recipes! 🤯\n        \n        Most people don't know this, but...\n        \n        If you want to learn more about Quick Healthy Recipes, this might surprise you.\n        \n        Comment below what you think! 👇",
+      "video_id": "reel_2026-03-13_ljuwg36zj",
+      "instagram_post_id": "18568329523006833",
+      "views": 3,
+      "likes": 1,
+      "comments": 0,
+      "shares": 0,
+      "status": "posted",
+      "generation_method": "stock-video-free",
+      "posted_at": "2026-03-13 08:34:46",
+      "created_at": "2026-03-13 06:44:33",
+      "updated_at": "2026-03-13 14:42:52",
+      "engagement_rate": 33.33
+    },
+    {
+      "id": 1,
+      "date": "2026-03-12",
+      "topic": "Money-Saving Tips",
+      "script": "You won't believe what I just discovered about Money-Saving Tips! 🤯\n        \n        Most people don't know this, but...\n        \n        If you want to learn more about Money-Saving Tips, this might surprise you.\n        \n        Comment below what you think! 👇",
+      "video_id": "lifehacks_01.mp4",
+      "instagram_post_id": null,
+      "views": 0,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "status": "pending",
+      "generation_method": "cached",
+      "posted_at": null,
+      "created_at": "2026-03-12 21:58:43",
+      "updated_at": "2026-03-12 21:58:43",
+      "engagement_rate": 0
+    }
+  ],
+  "sync": {
+    "attempted": true,
+    "updated": 1,
+    "failed": 0,
+    "total": 1
+  }
+}
