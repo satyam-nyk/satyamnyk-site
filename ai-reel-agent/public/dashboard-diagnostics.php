@@ -79,6 +79,28 @@ function diag_status($ok)
     </div>
 
     <div class="card">
+      <h2>Files in <code><?php echo htmlspecialchars(dirname(__DIR__), ENT_QUOTES, 'UTF-8'); ?>/</code></h2>
+      <?php
+        $parentDir = dirname(__DIR__);
+        $allFiles = @scandir($parentDir);
+        if ($allFiles === false) {
+            echo '<p class="fail">Cannot scan directory (permissions error)</p>';
+        } else {
+            echo '<ul>';
+            foreach ($allFiles as $f) {
+                if ($f === '.' || $f === '..') continue;
+                $fp = $parentDir . '/' . $f;
+                $size = is_file($fp) ? ' (' . number_format(filesize($fp)) . ' bytes)' : '/';
+                $perm = substr(sprintf('%o', fileperms($fp)), -4);
+                $highlight = ($f === '.env' || $f === 'database.sqlite') ? ' style="color:#fbbf24;font-weight:700"' : '';
+                echo '<li' . $highlight . '><code>' . htmlspecialchars($f, ENT_QUOTES, 'UTF-8') . '</code>' . htmlspecialchars($size . ' [' . $perm . ']', ENT_QUOTES, 'UTF-8') . '</li>';
+            }
+            echo '</ul>';
+        }
+      ?>
+    </div>
+
+    <div class="card">
       <h2>Next URLs</h2>
       <ul>
         <li><a href="dashboard-login.php">dashboard-login.php</a></li>
