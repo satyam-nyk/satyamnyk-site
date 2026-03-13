@@ -1,6 +1,6 @@
 {
   "success": true,
-  "generatedAt": "2026-03-13T14:42:52.478Z",
+  "generatedAt": "2026-03-13T14:52:22.213Z",
   "today": {
     "date": "2026-03-13",
     "post": {
@@ -18,7 +18,7 @@
       "generation_method": "stock-video-free",
       "posted_at": "2026-03-13 08:34:46",
       "created_at": "2026-03-13 06:44:33",
-      "updated_at": "2026-03-13 14:42:52"
+      "updated_at": "2026-03-13 14:52:22"
     },
     "status": "posted"
   },
@@ -45,8 +45,8 @@
       "status": "healthy"
     },
     "instagram": {
-      "used": 2,
-      "remaining": 198,
+      "used": 3,
+      "remaining": 197,
       "limit": 200,
       "status": "healthy"
     }
@@ -157,7 +157,7 @@
       "generation_method": "stock-video-free",
       "posted_at": "2026-03-13 08:34:46",
       "created_at": "2026-03-13 06:44:33",
-      "updated_at": "2026-03-13 14:42:52",
+      "updated_at": "2026-03-13 14:52:22",
       "engagement_rate": 33.33
     },
     {
