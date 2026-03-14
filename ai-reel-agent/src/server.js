@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 // Database and services
 import Database from './database/db.js';
 import APILimiter from './services/api-limiter.js';
-import GeminiService from './services/gemini-service.js';
+import LLMService from './services/gemini-service.js';
 import HeyGenService from './services/heygen-service.js';
 import InstagramService from './services/instagram-service.js';
 import StockVideoService from './services/stock-video-service.js';
@@ -19,6 +19,7 @@ import VideoCompositionService from './services/video-composition-service.js';
 import ResearchAgent from './agents/research-agent.js';
 import ScriptAgent from './agents/script-agent.js';
 import VideoAgent from './agents/video-agent.js';
+import { FEATURES, TIMING } from './config/constants.js';
 
 // Routes
 import { createWebhookRouter } from './routes/webhook.js';
@@ -46,7 +47,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Global state
 let database = null;
 let apiLimiter = null;
-let geminiService = null;
+let llmService = null;
 let heygenService = null;
 let instagramService = null;
 let stockVideoService = null;
@@ -55,6 +56,26 @@ let compositionService = null;
 let researchAgent = null;
 let scriptAgent = null;
 let videoAgent = null;
+let dailySchedulerTimeout = null;
+
+function getDailySchedulerHours() {
+  const envRaw = process.env.DAILY_POST_TIMES_UTC || '';
+  const source = envRaw
+    .split(',')
+    .map((v) => Number(v.trim()))
+    .filter((v) => Number.isInteger(v) && v >= 0 && v <= 23);
+
+  const fallback = Array.isArray(TIMING.DAILY_POST_TIMES)
+    ? TIMING.DAILY_POST_TIMES
+    : [8, 20];
+
+  const hours = (source.length ? source : fallback)
+    .map((v) => Number(v))
+    .filter((v) => Number.isInteger(v) && v >= 0 && v <= 23);
+
+  if (!hours.length) return [8, 20];
+  return [...new Set(hours)].sort((a, b) => a - b);
+}
 
 /**
  * Initialize all services
@@ -72,12 +93,15 @@ async function initializeServices() {
     console.log('[Server] Initializing API limiter...');
     apiLimiter = new APILimiter(database);
 
-    // 3. Initialize Gemini Service
-    if (!process.env.GOOGLE_GEMINI_API_KEY) {
-      throw new Error('GOOGLE_GEMINI_API_KEY is not set');
+    // 3. Initialize LLM Service (Mistral primary, Gemini fallback)
+    if (!process.env.MISTRAL_API_KEY && !process.env.GOOGLE_GEMINI_API_KEY) {
+      throw new Error('MISTRAL_API_KEY or GOOGLE_GEMINI_API_KEY must be set');
     }
-    console.log('[Server] Initializing Gemini service...');
-    geminiService = new GeminiService(process.env.GOOGLE_GEMINI_API_KEY, apiLimiter);
+    console.log('[Server] Initializing LLM service (Mistral primary)...');
+    llmService = new LLMService(process.env.MISTRAL_API_KEY, apiLimiter, {
+      geminiApiKey: process.env.GOOGLE_GEMINI_API_KEY,
+      mistralModel: process.env.MISTRAL_MODEL,
+    });
 
     // 4. Initialize HeyGen Service
     if (!process.env.HEYGEN_API_KEY) {
@@ -99,8 +123,8 @@ async function initializeServices() {
 
     // 6. Initialize Agents
     console.log('[Server] Initializing agents...');
-    researchAgent = new ResearchAgent(geminiService, database, apiLimiter);
-    scriptAgent = new ScriptAgent(geminiService, database, apiLimiter);
+    researchAgent = new ResearchAgent(llmService, database, apiLimiter);
+    scriptAgent = new ScriptAgent(llmService, database, apiLimiter);
     
     // 7. Initialize free-tier hybrid video services
     console.log('[Server] Initializing free-tier video services...');
@@ -182,6 +206,13 @@ function setupRoutes() {
     }
   });
 
+  app.get('/api/public-config', (req, res) => {
+    return res.json({
+      success: true,
+      instagramPageUrl: process.env.INSTAGRAM_PAGE_URL || null,
+    });
+  });
+
   // Health check endpoint
   app.get('/', (req, res) => {
     res.json({
@@ -239,6 +270,57 @@ function setupRoutes() {
   });
 }
 
+function scheduleNextDailyRun() {
+  if (!FEATURES.AUTO_SCHEDULE) {
+    console.log('[Server] Daily scheduler disabled by feature flag');
+    return;
+  }
+
+  const now = new Date();
+  const hours = getDailySchedulerHours();
+  let nextRun = null;
+
+  for (const hour of hours) {
+    const candidate = new Date(now);
+    candidate.setUTCHours(hour, 0, 0, 0);
+    if (candidate > now) {
+      nextRun = candidate;
+      break;
+    }
+  }
+
+  if (!nextRun) {
+    nextRun = new Date(now);
+    nextRun.setUTCDate(nextRun.getUTCDate() + 1);
+    nextRun.setUTCHours(hours[0], 0, 0, 0);
+  }
+
+  const delay = nextRun.getTime() - now.getTime();
+  console.log(`[Server] Auto scheduler hours (UTC): ${hours.join(', ')}`);
+  console.log(`[Server] Next reel scheduler run at ${nextRun.toISOString()}`);
+
+  clearTimeout(dailySchedulerTimeout);
+  dailySchedulerTimeout = setTimeout(async () => {
+    try {
+      const headers = {};
+      if (process.env.WEBHOOK_SECRET) {
+        headers.Authorization = `Bearer ${process.env.WEBHOOK_SECRET}`;
+      }
+
+      const response = await fetch(`http://127.0.0.1:${PORT}/api/webhook/generate-daily-reel`, {
+        method: 'POST',
+        headers,
+      });
+      const data = await response.json();
+      console.log('[Server] Daily scheduler response:', JSON.stringify(data));
+    } catch (error) {
+      console.error('[Server] Daily scheduler error:', error.message);
+    } finally {
+      scheduleNextDailyRun();
+    }
+  }, delay);
+}
+
 /**
  * Start server
  */
@@ -257,6 +339,7 @@ async function startServer() {
       console.log(`[Server] Database: ${DB_PATH}`);
       console.log(`[Server] Dashboard: http://localhost:${PORT}/dashboard`);
       console.log(`[Server] API Health: http://localhost:${PORT}/api/health`);
+      scheduleNextDailyRun();
     });
   } catch (error) {
     console.error('[Server] Failed to start server:', error.message);

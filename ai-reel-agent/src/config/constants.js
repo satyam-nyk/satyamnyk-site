@@ -1,6 +1,11 @@
 // API Configuration and Limits
 
 export const API_LIMITS = {
+  MISTRAL: {
+    DAILY_LIMIT: 200,
+    CALLS_PER_MINUTE: 30,
+    TIMEOUT: 30000, // 30 seconds
+  },
   GEMINI: {
     DAILY_LIMIT: 50,
     CALLS_PER_MINUTE: 15,
@@ -137,7 +142,7 @@ export const FEATURES = {
 
 // Timing Configuration (in hours UTC)
 export const TIMING = {
-  DAILY_POST_TIME: 8, // 8 AM UTC
+  DAILY_POST_TIMES: [8, 20], // 8 AM and 8 PM UTC
   BATCH_PROCESSING_DAY: 0, // Sunday (0)
   BATCH_PROCESSING_TIME: 0, // Midnight UTC
   ANALYTICS_UPDATE_INTERVAL: 6, // Every 6 hours

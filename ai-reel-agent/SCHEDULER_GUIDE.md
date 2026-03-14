@@ -6,32 +6,25 @@ Your AI Reel Agent is fully configured and ready for production!
 
 - ✅ **Smart Hybrid Video Generation**: HeyGen → Free Stock Videos → Cache
 - ✅ **Instagram Integration**: Always posts with caption + trending hashtags
-- ✅ **Daily Scheduler**: Configured to run at 8 AM UTC automatically
+- ✅ **Daily Scheduler**: Configured to run twice daily at 8 AM and 8 PM UTC
 - ✅ **Railway Deployment**: Auto-deploys on GitHub push
 
 ---
 
 ## 📍 Scheduler Configuration
 
-### GitHub Actions (Automatic)
+### Built-in Server Scheduler (Automatic)
 
-**Schedule:** Every day at **8:00 AM UTC**
-- **EST:** 3:00 AM
-- **PST:** 12:00 AM (midnight)
-- **IST:** 1:30 PM
+**Schedule:** Every day at **8:00 AM UTC** and **8:00 PM UTC**
+- **EST:** 3:00 AM and 3:00 PM
+- **PST:** 12:00 AM and 12:00 PM
+- **IST:** 1:30 PM and 1:30 AM
 
-**File:** `.github/workflows/daily-reel.yml`
-
-```yaml
-on:
-  schedule:
-    - cron: '0 8 * * *'  # Daily at 8 AM UTC
-  workflow_dispatch:      # Manual trigger available
-```
+**Source:** `src/server.js` + `src/config/constants.js`
 
 **How it works:**
-1. GitHub Actions triggers webhook at scheduled time
-2. Sends POST request to your Railway app: `/api/webhook/generate-daily-reel`
+1. Internal server scheduler triggers webhook at the next configured UTC slot
+2. Sends POST request to your app: `/api/webhook/generate-daily-reel`
 3. Server generates topic → script → video → Instagram post
 4. All in ~5 seconds!
 
@@ -193,21 +186,17 @@ Customize these with your own trending hashtags!
 
 ### To Change Schedule Time
 
-Edit `.github/workflows/daily-reel.yml`:
+Set UTC hours in `.env` using a comma-separated list:
 
-```yaml
-on:
-  schedule:
-    - cron: '30 9 * * *'  # Change to 9:30 AM UTC
+```bash
+DAILY_POST_TIMES_UTC=8,20
 ```
 
-Cron format: `minute hour day month dayOfWeek`
-
 **Examples:**
-- `0 8 * * *` → 8:00 AM UTC (current)
-- `0 0 * * *` → 12:00 AM UTC (midnight)
-- `0 12 * * *` → 12:00 PM UTC (noon)
-- `30 3 * * 1` → 3:30 AM UTC on Mondays only
+- `DAILY_POST_TIMES_UTC=8,20` → 8:00 AM + 8:00 PM UTC (current)
+- `DAILY_POST_TIMES_UTC=9,21` → 9:00 AM + 9:00 PM UTC
+- `DAILY_POST_TIMES_UTC=6,12,18` → three runs/day
+- `DAILY_POST_TIMES_UTC=0` → once daily at midnight UTC
 
 ---
 

@@ -32,6 +32,7 @@ class InstagramService {
       }
 
       const isRemoteUrl = typeof videoPath === 'string' && /^https?:\/\//i.test(videoPath);
+      let publishableVideoUrl = videoPath;
 
       if (!isRemoteUrl) {
         const resolvedVideoPath = this.resolveVideoPath(videoPath);
@@ -40,10 +41,11 @@ class InstagramService {
           return null;
         }
 
-        console.warn(
-          '[InstagramService] Local file upload is not supported by this Reels flow. Provide a public video URL.'
-        );
-        return null;
+        publishableVideoUrl = await this.uploadLocalVideo(resolvedVideoPath);
+        if (!publishableVideoUrl) {
+          console.warn('[InstagramService] Could not upload local reel to a public URL');
+          return null;
+        }
       }
 
       // Check API limit
@@ -62,7 +64,7 @@ class InstagramService {
         `${this.baseURL}/${this.businessAccountId}/media`,
         {
           media_type: 'REELS',
-          video_url: videoPath,
+          video_url: publishableVideoUrl,
           caption,
           access_token: this.accessToken,
         },
@@ -100,6 +102,7 @@ class InstagramService {
         postId,
         mediaId,
         url: `https://instagram.com/reel/${postId}`,
+        sourceVideoUrl: publishableVideoUrl,
         status: 'posted',
         postedAt: new Date().toISOString(),
       };
@@ -130,6 +133,40 @@ class InstagramService {
     const projectRoot = path.resolve(__dirname, '../..');
     const normalizedRelativePath = videoPath.replace(/^\.\//, '');
     return path.join(projectRoot, normalizedRelativePath);
+  }
+
+  async uploadLocalVideo(videoPath) {
+    const fileName = path.basename(videoPath);
+    const buffer = fs.readFileSync(videoPath);
+    const blob = new Blob([buffer], { type: 'video/mp4' });
+
+    const catboxForm = new FormData();
+    catboxForm.append('reqtype', 'fileupload');
+    catboxForm.append('fileToUpload', blob, fileName);
+
+    const catboxResponse = await fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: catboxForm,
+    });
+    const catboxText = (await catboxResponse.text()).trim();
+    if (catboxResponse.ok && /^https?:\/\//i.test(catboxText)) {
+      console.log('[InstagramService] Uploaded local reel to Catbox');
+      return catboxText;
+    }
+
+    const zeroForm = new FormData();
+    zeroForm.append('file', blob, fileName);
+    const zeroResponse = await fetch('https://0x0.st', {
+      method: 'POST',
+      body: zeroForm,
+    });
+    const zeroText = (await zeroResponse.text()).trim();
+    if (zeroResponse.ok && /^https?:\/\//i.test(zeroText)) {
+      console.log('[InstagramService] Uploaded local reel to 0x0.st');
+      return zeroText;
+    }
+
+    return null;
   }
 
   /**
@@ -409,7 +446,7 @@ class InstagramService {
         `${this.baseURL}/${this.businessAccountId}`,
         {
           params: {
-            fields: 'id,name,username,biography,followers_count,follows_count',
+            fields: 'id,name,username,biography,followers_count,follows_count,media_count',
             access_token: this.accessToken,
           },
           timeout: this.timeout,
@@ -420,6 +457,49 @@ class InstagramService {
     } catch (error) {
       console.error('[InstagramService] Error getting account info:', error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Get recent Instagram media for this business account.
+   * Returns a list with permalink + basic engagement fields when available.
+   */
+  async getRecentMedia(limit = 25) {
+    try {
+      if (!(await this.apiLimiter.canMakeRequest('INSTAGRAM'))) {
+        console.warn('[InstagramService] Instagram rate limit reached before media fetch');
+        return [];
+      }
+
+      const response = await axios.get(
+        `${this.baseURL}/${this.businessAccountId}/media`,
+        {
+          params: {
+            fields: 'id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count,media_url,thumbnail_url',
+            limit: Math.max(1, Math.min(Number(limit) || 25, 50)),
+            access_token: this.accessToken,
+          },
+          timeout: this.timeout,
+        }
+      );
+
+      await this.apiLimiter.consumeLimit('INSTAGRAM', 1);
+
+      return (response.data?.data || []).map((item) => ({
+        id: item.id,
+        caption: item.caption || '',
+        media_type: item.media_type || null,
+        media_product_type: item.media_product_type || null,
+        permalink: item.permalink || null,
+        timestamp: item.timestamp || null,
+        media_url: item.media_url || null,
+        thumbnail_url: item.thumbnail_url || null,
+        likes: item.like_count || 0,
+        comments: item.comments_count || 0,
+      }));
+    } catch (error) {
+      console.warn('[InstagramService] Could not fetch recent media:', error.message);
+      return [];
     }
   }
 

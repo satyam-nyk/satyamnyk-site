@@ -7,6 +7,65 @@ let snapshot = null;
 let filteredHistory = [];
 let currentOffset = 0;
 
+function deriveTopicFromCaption(caption = '') {
+  const text = String(caption || '').replace(/\s+/g, ' ').trim();
+  if (!text) return 'Instagram Post';
+  return text.length > 56 ? `${text.slice(0, 53)}...` : text;
+}
+
+function getUnifiedHistoryRows() {
+  const dbRows = (snapshot?.history || []).map((row) => ({
+    ...row,
+    rowKey: `db_${row.id}`,
+  }));
+
+  const seenInstagramIds = new Set(
+    dbRows
+      .map((row) => String(row.instagram_post_id || '').trim())
+      .filter(Boolean)
+  );
+
+  const instagramRows = (snapshot?.instagram?.recentMedia || [])
+    .filter((item) => item?.id && !seenInstagramIds.has(String(item.id)))
+    .map((item, index) => {
+      const timestamp = item.timestamp || null;
+      const dateOnly = timestamp ? String(timestamp).split('T')[0] : null;
+      const likes = Number(item.likes || 0);
+      const comments = Number(item.comments || 0);
+      const views = Number(item.views || 0);
+      const engagementRate = views > 0
+        ? Number((((likes + comments) * 100) / views).toFixed(2))
+        : 0;
+
+      return {
+        id: -(index + 1),
+        rowKey: `ig_${item.id}`,
+        date: dateOnly,
+        topic: deriveTopicFromCaption(item.caption),
+        script: item.caption || '--',
+        video_id: null,
+        instagram_post_id: item.id,
+        permalink: item.permalink || null,
+        views,
+        likes,
+        comments,
+        shares: 0,
+        status: 'posted',
+        generation_method: 'instagram-feed',
+        posted_at: timestamp,
+        created_at: timestamp,
+        updated_at: timestamp,
+        engagement_rate: engagementRate,
+      };
+    });
+
+  return [...dbRows, ...instagramRows].sort((a, b) => {
+    const aTime = new Date(a.posted_at || a.updated_at || a.date || 0).getTime();
+    const bTime = new Date(b.posted_at || b.updated_at || b.date || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
 function snapshotUrl() {
   return `${SNAPSHOT_URL}?t=${Date.now()}`;
 }
@@ -157,9 +216,13 @@ function updateAPIBar(service, data = {}) {
 }
 
 function updateStatistics(stats = {}, insights = {}) {
-  document.getElementById('total-posts').textContent = formatNumber(stats.totalPosts || 0);
-  document.getElementById('total-views').textContent = formatNumber(stats.totalViews || 0);
-  document.getElementById('avg-engagement').textContent = `${Number(stats.avgEngagementRate || 0).toFixed(2)}%`;
+  const totalPosts = insights?.kpi?.total_posts ?? stats.totalPosts ?? 0;
+  const totalViews = insights?.kpi?.total_views ?? stats.totalViews ?? 0;
+  const avgEngagementRate = insights?.kpi?.avg_engagement_rate ?? stats.avgEngagementRate ?? 0;
+
+  document.getElementById('total-posts').textContent = formatNumber(totalPosts);
+  document.getElementById('total-views').textContent = formatNumber(totalViews);
+  document.getElementById('avg-engagement').textContent = `${Number(avgEngagementRate || 0).toFixed(2)}%`;
 
   const posted = insights?.kpi?.posted_count || 0;
   const failed = insights?.kpi?.failed_count || 0;
@@ -289,7 +352,7 @@ async function reloadHistory() {
 }
 
 function applyHistoryFilter() {
-  const rows = snapshot?.history || [];
+  const rows = getUnifiedHistoryRows();
   const status = document.getElementById('status-filter')?.value || 'all';
   filteredHistory = status === 'all' ? rows : rows.filter((row) => row.status === status);
 }
@@ -306,12 +369,12 @@ function loadHistory() {
     body.innerHTML = '<tr><td colspan="9">No posts found.</td></tr>';
   } else {
     body.innerHTML = rows.map((row) => {
-      const sc = instagramShortcode(row.instagram_post_id);
-      const link = sc
-        ? `<a href="https://www.instagram.com/reel/${sc}/" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View on Instagram">↗ View</a>`
+      const permalink = row.permalink || (row.instagram_post_id ? `https://www.instagram.com/reel/${instagramShortcode(row.instagram_post_id) || ''}/` : null);
+      const link = permalink
+        ? `<a href="${permalink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View on Instagram">↗ View</a>`
         : '--';
       return `
-        <tr onclick="showPostDetail(${row.id})">
+        <tr onclick="showPostDetailByKey('${row.rowKey}')">
           <td>${formatDate(row.date)}</td>
           <td>${escapeHtml((row.topic || '--').slice(0, 50))}</td>
           <td><span class="table-status ${row.status || 'pending'}">${(row.status || 'pending').toUpperCase()}</span></td>
@@ -342,14 +405,15 @@ function instagramShortcode(postId) {
   return result;
 }
 
-function showPostDetail(id) {
-  const post = (snapshot?.history || []).find((row) => Number(row.id) === Number(id));
+function showPostDetailByKey(rowKey) {
+  const post = getUnifiedHistoryRows().find((row) => row.rowKey === rowKey);
   const detail = document.getElementById('post-detail');
   if (!detail || !post) return;
 
   const shortcode = instagramShortcode(post.instagram_post_id);
-  const instagramBlock = shortcode
-    ? `<p><strong>Instagram:</strong> <a href="https://www.instagram.com/reel/${shortcode}/" target="_blank" rel="noopener">View Reel ↗</a></p>`
+  const permalink = post.permalink || (shortcode ? `https://www.instagram.com/reel/${shortcode}/` : null);
+  const instagramBlock = permalink
+    ? `<p><strong>Instagram:</strong> <a href="${permalink}" target="_blank" rel="noopener">View Reel ↗</a></p>`
     : `<p><strong>Instagram Post ID:</strong> ${escapeHtml(post.instagram_post_id || '--')}</p>`;
 
   detail.innerHTML = `
@@ -392,7 +456,10 @@ function formatNumber(num) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '--';
-  const date = new Date(`${dateStr}T00:00:00`);
+  const date = String(dateStr).includes('T')
+    ? new Date(dateStr)
+    : new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '--';
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 

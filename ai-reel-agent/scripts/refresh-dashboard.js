@@ -100,6 +100,15 @@ async function buildSnapshot() {
 
     const sync = await syncInstagramAnalytics(database, instagramService);
 
+    let instagramAccount = null;
+    let instagramMedia = [];
+    if (instagramService) {
+      [instagramAccount, instagramMedia] = await Promise.all([
+        instagramService.getAccountInfo().catch(() => null),
+        instagramService.getRecentMedia(25).catch(() => []),
+      ]);
+    }
+
     const [todayPost, apiStatus, postStats, queueStats, cacheStats, insights, recommendations, analytics, history] = await Promise.all([
       database.getTodayPost(),
       apiLimiter.getStatus(),
@@ -113,6 +122,9 @@ async function buildSnapshot() {
     ]);
 
     const today = new Date().toISOString().split('T')[0];
+    const kpi = insights?.kpi || {};
+    const dbTotalPosts = kpi.total_posts ?? postStats.total_posts ?? 0;
+    const instagramTotalPosts = Number(instagramAccount?.media_count || 0);
     const snapshot = {
       success: true,
       generatedAt: new Date().toISOString(),
@@ -122,13 +134,15 @@ async function buildSnapshot() {
         status: todayPost?.status || 'not_started',
       },
       stats: {
-        totalPosts: postStats.total_posts || 0,
-        totalViews: postStats.total_views || 0,
-        totalLikes: postStats.total_likes || 0,
-        totalComments: postStats.total_comments || 0,
-        totalShares: postStats.total_shares || 0,
-        avgViews: postStats.avg_views || 0,
-        avgEngagementRate: postStats.avg_engagement_rate || 0,
+        totalPosts: Math.max(dbTotalPosts, instagramTotalPosts),
+        totalViews: kpi.total_views ?? postStats.total_views ?? 0,
+        totalLikes: kpi.total_likes ?? postStats.total_likes ?? 0,
+        totalComments: kpi.total_comments ?? postStats.total_comments ?? 0,
+        totalShares: kpi.total_shares ?? postStats.total_shares ?? 0,
+        avgViews: (kpi.total_posts && kpi.total_posts > 0)
+          ? Number(((kpi.total_views || 0) / kpi.total_posts).toFixed(2))
+          : (postStats.avg_views || 0),
+        avgEngagementRate: kpi.avg_engagement_rate ?? postStats.avg_engagement_rate ?? 0,
       },
       apiUsage: {
         gemini: mapStatus(apiStatus.gemini, 50, 'limit'),
@@ -151,6 +165,10 @@ async function buildSnapshot() {
       insights,
       recommendations,
       history,
+      instagram: {
+        account: instagramAccount,
+        recentMedia: instagramMedia,
+      },
       sync,
     };
 
