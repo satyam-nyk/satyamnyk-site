@@ -580,7 +580,20 @@ footer {
   .pipeline-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .feature-split { grid-template-columns: 1fr; }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ig-embeds-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ig-embeds-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .ig-embed-item {
+    min-width: min(78vw, 360px);
+    max-width: min(78vw, 360px);
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
 }
 
 @media (max-width: 640px) {
@@ -629,17 +642,11 @@ footer {
   .pipeline-grid { grid-template-columns: 1fr; }
   .stats { grid-template-columns: 1fr; }
   .api-config-row { grid-template-columns: 1fr; }
-  .ig-embeds-grid {
-    display: flex;
-    overflow-x: auto;
-    gap: 12px;
-    scroll-snap-type: x mandatory;
-    padding-bottom: 4px;
-  }
+  .ig-embeds-grid { padding-bottom: 4px; }
   .ig-embed-item {
     min-width: min(86vw, 360px);
     max-width: min(86vw, 360px);
-    scroll-snap-align: center;
+    scroll-snap-align: start;
     flex-shrink: 0;
   }
   .ig-profile-banner { flex-direction: column; align-items: flex-start; }
