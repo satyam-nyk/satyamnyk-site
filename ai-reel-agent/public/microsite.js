@@ -3,6 +3,8 @@ function fmt(n) {
   return Number(n).toLocaleString();
 }
 
+const DEFAULT_INSTAGRAM_PAGE_URL = 'https://www.instagram.com/globaldailydose/';
+
 function fmtDate(date) {
   if (!date) return '--';
   return new Date(date).toLocaleDateString(undefined, {
@@ -34,6 +36,30 @@ async function loadPublicConfig() {
   } catch (_) {
     return null;
   }
+}
+
+async function fetchDashboardSnapshot() {
+  const cacheBust = Date.now();
+  const candidates = [
+    `dashboard-data.json?t=${cacheBust}`,
+    `/dashboard-data.json?t=${cacheBust}`,
+    `/dashboard/api/dashboard-data?t=${cacheBust}`,
+  ];
+
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) continue;
+      const json = await response.json();
+      if (json?.success) {
+        return json;
+      }
+    } catch (_) {
+      // Try the next source.
+    }
+  }
+
+  throw new Error('dashboard snapshot unavailable');
 }
 
 function updateInstagramBadge(pageUrl) {
@@ -202,13 +228,14 @@ async function loadPublicStats() {
   engEl.textContent = '...';
   methodEl.textContent = '...';
 
+  // Keep CTA available on first paint even if stats fetch is slow/fails.
+  updateInstagramBadge(DEFAULT_INSTAGRAM_PAGE_URL);
+
   try {
-    const [statsRes, publicConfig] = await Promise.all([
-      fetch(`dashboard-data.json?t=${Date.now()}`),
+    const [data, publicConfig] = await Promise.all([
+      fetchDashboardSnapshot(),
       loadPublicConfig(),
     ]);
-    const data = await statsRes.json();
-    if (!statsRes.ok || !data.success) throw new Error('stats unavailable');
 
     const totalPosts = data.instagram?.account?.media_count
       ?? data.insights?.kpi?.total_posts
@@ -222,7 +249,7 @@ async function loadPublicStats() {
     engEl.textContent = `${Number(avgEngagement).toFixed(2)}%`;
     methodEl.textContent = data.insights?.methodSplit?.[0]?.method || '--';
 
-    const pageUrl = publicConfig?.instagramPageUrl || data.instagramPageUrl || null;
+    const pageUrl = publicConfig?.instagramPageUrl || data.instagramPageUrl || DEFAULT_INSTAGRAM_PAGE_URL;
     updateInstagramBadge(pageUrl);
     updateEmbeddedReels(data.history || [], data.instagram?.recentMedia || []);
   } catch (e) {
@@ -231,7 +258,7 @@ async function loadPublicStats() {
     viewsEl.textContent = '--';
     engEl.textContent = '--';
     methodEl.textContent = '--';
-    updateInstagramBadge(null);
+    updateInstagramBadge(DEFAULT_INSTAGRAM_PAGE_URL);
     updateEmbeddedReels([], []);
   }
 }
@@ -239,3 +266,6 @@ async function loadPublicStats() {
 syncLoginLinks();
 setupMobileMenu();
 loadPublicStats();
+window.addEventListener('pageshow', () => {
+  loadPublicStats();
+});
