@@ -194,7 +194,7 @@ function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
     gridEl.innerHTML = fallback.map((row) => `
       <article class="ig-embed-item yt-embed-item">
         <div class="yt-frame-wrap">
-          <iframe src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+          <iframe src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
         </div>
         <div class="ig-card-body">
           <p class="ig-card-caption">${row.title}</p>
@@ -213,7 +213,7 @@ function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
   gridEl.innerHTML = fromYoutube.map((row) => `
     <article class="ig-embed-item yt-embed-item">
       <div class="yt-frame-wrap">
-        <iframe src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        <iframe src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
       </div>
       <div class="ig-card-body">
         <p class="ig-card-caption">${row.title}</p>
@@ -296,6 +296,30 @@ function updateEmbeddedReels(historyRows = [], instagramMedia = []) {
       });
     })
     .join('');
+}
+
+function initWallTabs() {
+  const tabs = document.querySelectorAll('.wall-tab');
+  if (!tabs.length) return;
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.wall;
+
+      // Update tab active states
+      tabs.forEach((t) => {
+        const isActive = t.dataset.wall === target;
+        t.classList.toggle('active', isActive);
+        t.setAttribute('aria-selected', String(isActive));
+      });
+
+      // Show / hide panels
+      document.querySelectorAll('.wall-panel').forEach((panel) => {
+        const isTarget = panel.id === `wall-${target}`;
+        panel.classList.toggle('wall-panel--hidden', !isTarget);
+      });
+    });
+  });
 }
 
 function setupMobileMenu() {
@@ -403,6 +427,7 @@ async function loadPublicStats() {
 
 syncLoginLinks();
 setupMobileMenu();
+initWallTabs();
 loadPublicStats();
 window.addEventListener('pageshow', () => {
   loadPublicStats();

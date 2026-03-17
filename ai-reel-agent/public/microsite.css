@@ -558,18 +558,67 @@ main { padding-top: 46px; padding-bottom: 64px; }
   border-color: rgba(255, 77, 77, 0.28);
 }
 
+/* ── iframe fix: aspect-ratio parent needs relative positioning
+   so height:100% on child resolves correctly ──────────────── */
 .yt-frame-wrap {
   width: 100%;
   aspect-ratio: 9 / 16;
   background: #080b0f;
+  position: relative;
+  overflow: hidden;
 }
 
 .yt-frame-wrap iframe {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   border: 0;
   display: block;
 }
+
+/* ── Wall tabs ─────────────────────────────────────────────── */
+.wall-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 22px 0 0;
+}
+
+.wall-tab {
+  appearance: none;
+  cursor: pointer;
+  font-family: "Manrope", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.wall-tab:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+.wall-tab.active {
+  background: linear-gradient(135deg, rgba(245,158,11,0.18), rgba(34,211,238,0.14));
+  border-color: rgba(245, 158, 11, 0.55);
+  color: var(--text);
+}
+
+/* YouTube tab active state gets a red accent */
+.wall-tab.active[data-wall="youtube"] {
+  background: linear-gradient(135deg, rgba(255,0,51,0.2), rgba(204,0,0,0.12));
+  border-color: rgba(255, 51, 51, 0.55);
+}
+
+/* ── Wall panels ───────────────────────────────────────────── */
+.wall-panel { margin-top: 18px; }
+
+.wall-panel--hidden { display: none; }
 
 .ig-badge-head {
   display: flex;
