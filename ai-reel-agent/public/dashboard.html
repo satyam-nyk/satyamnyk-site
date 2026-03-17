@@ -201,11 +201,36 @@
 
             <section class="card card-large">
                 <div class="card-header">
-                    <h2>▶️ YouTube Shorts Wall</h2>
+                    <h2>▶️ YouTube Channel &amp; Shorts</h2>
                 </div>
                 <div class="card-content">
+                    <div class="yt-channel-banner" id="yt-channel-banner">
+                        <div class="yt-channel-meta">
+                            <p class="yt-channel-title" id="yt-channel-title">Loading…</p>
+                            <p class="yt-channel-sub" id="yt-channel-url">&mdash;</p>
+                        </div>
+                        <div class="yt-channel-stats">
+                            <div class="yt-stat-item">
+                                <span class="yt-stat-value" id="yt-stat-subs">&mdash;</span>
+                                <span class="yt-stat-label">Subscribers</span>
+                            </div>
+                            <div class="yt-stat-item">
+                                <span class="yt-stat-value" id="yt-stat-views">&mdash;</span>
+                                <span class="yt-stat-label">Total Views</span>
+                            </div>
+                            <div class="yt-stat-item">
+                                <span class="yt-stat-value" id="yt-stat-videos">&mdash;</span>
+                                <span class="yt-stat-label">Videos</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="yt-analytics-note" id="yt-analytics-note" style="display:none">
+                        ⚠️ YouTube Analytics API is disabled in your Google Cloud project.
+                        <a href="https://console.developers.google.com/apis/api/youtubeanalytics.googleapis.com/overview" target="_blank" rel="noopener">Enable it here</a>
+                        to unlock per-day views, watch time, and subscriber charts.
+                    </p>
                     <div id="youtube-wall" class="youtube-wall">
-                        <p class="loading">Loading YouTube videos...</p>
+                        <p class="loading">Loading YouTube videos…</p>
                     </div>
                 </div>
             </section>

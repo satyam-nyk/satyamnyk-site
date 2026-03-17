@@ -6,6 +6,7 @@ import 'dotenv/config';
 import Database from '../src/database/db.js';
 import APILimiter from '../src/services/api-limiter.js';
 import InstagramService from '../src/services/instagram-service.js';
+import YouTubeService from '../src/services/youtube-service.js';
 import ScriptAgent from '../src/agents/script-agent.js';
 import VideoAgent from '../src/agents/video-agent.js';
 
@@ -85,6 +86,57 @@ async function syncInstagramAnalytics(database, instagramService) {
   return { attempted: true, updated, failed, total: posts.length };
 }
 
+async function syncYouTubeAnalytics(database, youtubeService) {
+  if (!youtubeService) {
+    return { attempted: false, updated: 0, failed: 0, total: 0, reason: 'YouTube not configured' };
+  }
+
+  const posts = await new Promise((resolve, reject) => {
+    database.db.all(
+      `SELECT id, date, youtube_video_id FROM daily_posts
+       WHERE youtube_video_id IS NOT NULL AND youtube_video_id != ''
+       ORDER BY date DESC`,
+      (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      }
+    );
+  });
+
+  if (!posts.length) {
+    return { attempted: true, updated: 0, failed: 0, total: 0 };
+  }
+
+  let updated = 0;
+  let failed = 0;
+
+  try {
+    const items = await youtubeService.getVideoStats(posts.map((post) => post.youtube_video_id));
+    const byId = new Map(items.map((item) => [item.id, item]));
+
+    for (const post of posts) {
+      const item = byId.get(post.youtube_video_id);
+      if (!item) {
+        failed += 1;
+        continue;
+      }
+
+      const stats = item.statistics || {};
+      await database.updatePostYouTubeAnalytics(
+        post.youtube_video_id,
+        Number(stats.viewCount || 0),
+        Number(stats.likeCount || 0),
+        Number(stats.commentCount || 0)
+      );
+      updated += 1;
+    }
+  } catch (error) {
+    return { attempted: true, updated, failed: posts.length, total: posts.length, reason: error.message };
+  }
+
+  return { attempted: true, updated, failed, total: posts.length };
+}
+
 async function buildSnapshot() {
   const database = new Database(dbPath);
   await database.initDB();
@@ -97,8 +149,12 @@ async function buildSnapshot() {
     const instagramService = process.env.INSTAGRAM_ACCESS_TOKEN && process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID
       ? new InstagramService(process.env.INSTAGRAM_ACCESS_TOKEN, process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID, apiLimiter)
       : null;
+    const youtubeService = String(process.env.YOUTUBE_ENABLED || 'false').toLowerCase() === 'true'
+      ? new YouTubeService({ apiLimiter })
+      : null;
 
     const sync = await syncInstagramAnalytics(database, instagramService);
+    const youtubeSync = await syncYouTubeAnalytics(database, youtubeService);
 
     let instagramAccount = null;
     let instagramMedia = [];
@@ -121,6 +177,16 @@ async function buildSnapshot() {
       database.getAnalytics(30),
       database.getPostHistory(250, 0, 'all'),
     ]);
+
+    let youtubeChannel = null;
+    let youtubeVideos = [];
+    let youtubeAnalytics = null;
+    if (youtubeService) {
+      youtubeChannel = await youtubeService.getOwnChannel().catch(() => null);
+      const ids = history.map((row) => row.youtube_video_id).filter(Boolean);
+      youtubeVideos = ids.length ? await youtubeService.getVideoStats(ids).catch(() => []) : [];
+      youtubeAnalytics = await youtubeService.getChannelAnalytics(28).catch(() => null);
+    }
 
     const today = new Date().toISOString().split('T')[0];
     const kpi = insights?.kpi || {};
@@ -149,6 +215,7 @@ async function buildSnapshot() {
         gemini: mapStatus(apiStatus.gemini, 50, 'limit'),
         heygen: mapStatus(apiStatus.heygen, 10, 'total'),
         instagram: mapStatus(apiStatus.instagram, 200, 'limit'),
+        youtube: mapStatus(apiStatus.youtube, 10000, 'limit'),
       },
       queue: {
         total: queueStats.total || 0,
@@ -170,6 +237,13 @@ async function buildSnapshot() {
       instagram: {
         account: instagramAccount,
         recentMedia: instagramMedia,
+      },
+      youtube: {
+        channel: youtubeChannel,
+        recentVideos: youtubeVideos,
+        analyticsEnabled: youtubeAnalytics?.analyticsEnabled ?? null,
+        channelAnalytics: youtubeAnalytics ?? null,
+        sync: youtubeSync,
       },
       sync,
     };

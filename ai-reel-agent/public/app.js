@@ -176,6 +176,7 @@ function updateUI(data) {
   updateTrendingTopics(data.insights?.topTopics || data.trendingTopics || []);
   updateMethodChart(data.insights?.methodSplit || []);
   updateRecommendations(data.recommendations || null);
+  updateYouTubeChannelCard(data.youtube || null);
   updateYouTubeWall(data.youtube?.recentVideos || [], data.history || []);
 }
 
@@ -286,6 +287,36 @@ function updateAPIBar(service, data = {}) {
   else statusEl.classList.add('healthy');
 }
 
+function updateYouTubeChannelCard(youtube) {
+  const channel = youtube?.channel || null;
+  const titleEl = document.getElementById('yt-channel-title');
+  const urlEl = document.getElementById('yt-channel-url');
+  const subsEl = document.getElementById('yt-stat-subs');
+  const viewsEl = document.getElementById('yt-stat-views');
+  const videosEl = document.getElementById('yt-stat-videos');
+  const analyticsNote = document.getElementById('yt-analytics-note');
+
+  if (!channel) {
+    if (titleEl) titleEl.textContent = 'YouTube not connected';
+    return;
+  }
+
+  const customUrl = channel.snippet?.customUrl
+    ? `youtube.com/${channel.snippet.customUrl.replace(/^@/, '@')}`
+    : (channel.id ? `youtube.com/channel/${channel.id}` : null);
+
+  if (titleEl) titleEl.textContent = channel.snippet?.title || 'YouTube Channel';
+  if (urlEl) urlEl.textContent = customUrl || channel.id || '';
+  if (subsEl) subsEl.textContent = formatNumber(Number(channel.statistics?.subscriberCount || 0));
+  if (viewsEl) viewsEl.textContent = formatNumber(Number(channel.statistics?.viewCount || 0));
+  if (videosEl) videosEl.textContent = formatNumber(Number(channel.statistics?.videoCount || 0));
+
+  // Show note if Analytics API failed
+  if (analyticsNote && youtube?.analyticsEnabled === false) {
+    analyticsNote.style.display = 'block';
+  }
+}
+
 function updateYouTubeWall(youtubeVideos = [], historyRows = []) {
   const container = document.getElementById('youtube-wall');
   if (!container) return;
@@ -324,7 +355,7 @@ function updateYouTubeWall(youtubeVideos = [], historyRows = []) {
   container.innerHTML = rows.map((row) => `
     <article class="youtube-item">
       <div class="youtube-frame-wrap">
-        <iframe src="https://www.youtube.com/embed/${row.id}?rel=0" title="${escapeHtml(row.title)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        <iframe src="https://www.youtube.com/embed/${row.id}?rel=0" title="${escapeHtml(row.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
       </div>
       <div class="youtube-meta">
         <p>${escapeHtml(row.title)}</p>

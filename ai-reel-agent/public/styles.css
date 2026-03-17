@@ -649,13 +649,91 @@ body {
     width: 100%;
     aspect-ratio: 9 / 16;
     background: #020617;
+    position: relative;
+    overflow: hidden;
 }
 
 .youtube-frame-wrap iframe {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     border: 0;
     display: block;
+}
+
+/* YouTube channel stats banner */
+.yt-channel-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(255,0,51,0.15), rgba(0,0,0,0.2));
+    border: 1px solid rgba(255,51,51,0.3);
+    margin-bottom: 16px;
+}
+
+.yt-channel-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.yt-channel-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f5f5f5;
+    margin: 0;
+}
+
+.yt-channel-sub {
+    font-size: 0.82rem;
+    color: #aaa;
+    margin: 0;
+}
+
+.yt-channel-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.yt-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.yt-stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f5f5f5;
+}
+
+.yt-stat-label {
+    font-size: 0.75rem;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.yt-analytics-note {
+    font-size: 0.82rem;
+    color: #888;
+    padding: 8px 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    background: rgba(0,0,0,0.2);
+    margin-bottom: 14px;
+}
+
+.yt-analytics-note a {
+    color: #60a5fa;
+    text-decoration: none;
 }
 
 .youtube-meta {
