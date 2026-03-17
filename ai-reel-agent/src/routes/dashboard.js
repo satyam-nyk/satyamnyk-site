@@ -40,28 +40,31 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // Get today's post
-      const todayPost = await database.getTodayPost();
+      const [
+        todayPost,
+        latestStaticPost,
+        apiStatus,
+        postStats,
+        scriptQueueStats,
+        videoCacheStats,
+        trendingTopics,
+        analytics,
+        insights,
+        recommendations,
+      ] = await Promise.all([
+        database.getTodayPost(),
+        database.getLatestStaticPost().catch(() => null),
+        apiLimiter.getStatus(),
+        database.getAllPostStats(),
+        scriptAgent.getQueueStats(),
+        videoAgent.getCacheStats(),
+        researchAgent.getTrendingTopics(30, 10),
+        database.getAnalytics(30),
+        database.getInsightsSummary(30),
+        database.getRecommendations(90),
+      ]);
 
-      // Get API status
-      const apiStatus = await apiLimiter.getStatus();
-
-      // Get post statistics
-      const postStats = await database.getAllPostStats();
-
-      // Get queue stats
-      const scriptQueueStats = await scriptAgent.getQueueStats();
-
-      // Get video cache stats
-      const videoCacheStats = await videoAgent.getCacheStats();
-
-      // Get trending topics
-      const trendingTopics = await researchAgent.getTrendingTopics(30, 10);
-
-      // Get analytics for last 7 days
-      const analytics = await database.getAnalytics(30);
-      const insights = await database.getInsightsSummary(30);
-      const recommendations = await database.getRecommendations(90);
+      const llmStatus = apiStatus.mistral || apiStatus.gemini || {};
 
       return res.json({
         success: true,
@@ -82,10 +85,16 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
         },
         apiUsage: {
           gemini: {
-            used: apiStatus.gemini?.used || 0,
-            remaining: apiStatus.gemini?.remaining || 0,
-            limit: apiStatus.gemini?.limit || 50,
-            status: apiStatus.gemini?.status || 'unknown',
+            used: llmStatus.used || 0,
+            remaining: llmStatus.remaining || 0,
+            limit: llmStatus.limit || 50,
+            status: llmStatus.status || 'unknown',
+          },
+          mistral: {
+            used: apiStatus.mistral?.used || 0,
+            remaining: apiStatus.mistral?.remaining || 0,
+            limit: apiStatus.mistral?.limit || 200,
+            status: apiStatus.mistral?.status || 'unknown',
           },
           heygen: {
             used: apiStatus.heygen?.used || 0,
@@ -124,6 +133,7 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
         })),
         insights,
         recommendations,
+        staticPost: latestStaticPost,
       });
     } catch (error) {
       console.error('[Dashboard] Error retrieving dashboard data:', error.message);
@@ -237,18 +247,28 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
   router.get('/api/dashboard-data/api-limits', requireAuth, async (req, res) => {
     try {
       const status = await apiLimiter.getStatus();
+      const llmStatus = status.mistral || status.gemini || {};
 
       return res.json({
         success: true,
         data: {
           gemini: {
-            used: status.gemini?.used || 0,
-            remaining: status.gemini?.remaining || 0,
-            limit: status.gemini?.limit || 50,
-            percentUsed: status.gemini?.limit
-              ? Math.round(((status.gemini?.used || 0) / status.gemini?.limit) * 100)
+            used: llmStatus.used || 0,
+            remaining: llmStatus.remaining || 0,
+            limit: llmStatus.limit || 50,
+            percentUsed: llmStatus.limit
+              ? Math.round(((llmStatus.used || 0) / llmStatus.limit) * 100)
               : 0,
-            status: status.gemini?.status || 'unknown',
+            status: llmStatus.status || 'unknown',
+          },
+          mistral: {
+            used: status.mistral?.used || 0,
+            remaining: status.mistral?.remaining || 0,
+            limit: status.mistral?.limit || 200,
+            percentUsed: status.mistral?.limit
+              ? Math.round(((status.mistral?.used || 0) / status.mistral?.limit) * 100)
+              : 0,
+            status: status.mistral?.status || 'unknown',
           },
           heygen: {
             used: status.heygen?.used || 0,

@@ -163,13 +163,15 @@ class APILimiter {
    */
   async getBatchRecommendation() {
     try {
-      const geminiBatch = BATCH_CONFIG.SUNDAY_BATCH.TOPICS_TO_GENERATE;
+      const llmBatch = BATCH_CONFIG.SUNDAY_BATCH.TOPICS_TO_GENERATE;
+      const mistralBudget = (await this.checkLimit('MISTRAL')).remaining;
       const geminiBudget = (await this.checkLimit('GEMINI')).remaining;
       const heygenBudget = (await this.getRemainingForMonth('HEYGEN')).remaining;
+      const llmBudget = mistralBudget > 0 ? mistralBudget : geminiBudget;
 
       // Adjust batch based on available budget
-      const topicsToGenerate = Math.min(geminiBatch, Math.floor(geminiBudget / 2));
-      const scriptsToGenerate = Math.min(geminiBatch, Math.floor(geminiBudget / 1));
+      const topicsToGenerate = Math.min(llmBatch, Math.floor(llmBudget / 2));
+      const scriptsToGenerate = Math.min(llmBatch, Math.floor(llmBudget / 1));
       const videosToGenerate = Math.min(heygenBudget, 3); // Conservative estimate
 
       console.log(
@@ -180,6 +182,7 @@ class APILimiter {
         topicsToGenerate,
         scriptsToGenerate,
         videosToGenerate,
+        mistralBudget,
         geminiBudget,
         heygenBudget,
       };
@@ -194,11 +197,16 @@ class APILimiter {
    */
   async getStatus() {
     try {
+      const mistral = await this.checkLimit('MISTRAL');
       const gemini = await this.checkLimit('GEMINI');
       const heygen = await this.getRemainingForMonth('HEYGEN');
       const instagram = await this.checkLimit('INSTAGRAM');
 
       return {
+        mistral: {
+          ...mistral,
+          status: mistral.available ? 'healthy' : 'warning',
+        },
         gemini: {
           ...gemini,
           status: gemini.available ? 'healthy' : 'warning',

@@ -26,9 +26,9 @@ export const API_LIMITS = {
 
 // Video Configuration
 export const VIDEO_CONFIG = {
-  DURATION_MIN: 30, // seconds
-  DURATION_MAX: 60, // seconds
-  TARGET_DURATION: 45, // ideal duration
+  DURATION_MIN: 60, // seconds
+  DURATION_MAX: 120, // seconds
+  TARGET_DURATION: 90, // ideal duration
   FORMATS: {
     VIDEO: ['mp4', 'mov'],
     IMAGE: ['jpg', 'png', 'webp'],
@@ -77,6 +77,9 @@ export const SCRIPT_CONFIG = {
   EMOJIS_ENABLED: true,
   CTA_ENABLED: true,
   TRENDING_KEYWORDS: true,
+  STATIC_POST: {
+    MAX_WORDS: 50,
+  },
 };
 
 // Batch Processing Configuration
@@ -142,7 +145,7 @@ export const FEATURES = {
 
 // Timing Configuration (in hours UTC)
 export const TIMING = {
-  DAILY_POST_TIMES: [8, 20], // 8 AM and 8 PM UTC
+  DAILY_POST_TIMES: [8], // 8 AM UTC
   BATCH_PROCESSING_DAY: 0, // Sunday (0)
   BATCH_PROCESSING_TIME: 0, // Midnight UTC
   ANALYTICS_UPDATE_INTERVAL: 6, // Every 6 hours

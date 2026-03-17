@@ -13,9 +13,10 @@ class VideoAgent {
     this.stockVideoService = stockVideoService;
     this.ttsService = ttsService;
     this.compositionService = compositionService;
+    this.preferredGenerator = process.env.PREFERRED_VIDEO_GENERATOR || 'stock';
     
     console.log('[VideoAgent] Initialized with smart hybrid generation');
-    console.log('[VideoAgent] Priority: HeyGen → Stock Videos → Cache');
+    console.log(`[VideoAgent] Priority mode: ${this.preferredGenerator}`);
   }
 
   /**
@@ -31,6 +32,14 @@ class VideoAgent {
 
       let result = null;
 
+      const preferStock = this.preferredGenerator === 'stock';
+
+      if (preferStock) {
+        console.log('[VideoAgent] ✅ Tier 1: Preferred generator is stock video');
+        result = await this.generateStockVideo(script);
+        if (result) return result;
+      }
+
       // STRATEGY 1: Try HeyGen if quota available
       if (heygenStatus.remaining > 0) {
         console.log('[VideoAgent] ✅ Tier 1: HeyGen available, attempting premium generation');
@@ -39,9 +48,11 @@ class VideoAgent {
       }
 
       // STRATEGY 2: Fall back to free stock videos
-      console.log('[VideoAgent] ⚠️  Tier 2: Switching to free stock video generation');
-      result = await this.generateStockVideo(script);
-      if (result) return result;
+      if (!preferStock) {
+        console.log('[VideoAgent] ⚠️  Tier 2: Switching to free stock video generation');
+        result = await this.generateStockVideo(script);
+        if (result) return result;
+      }
 
       // STRATEGY 3: Fall back to cache
       console.log('[VideoAgent] ⚠️  Tier 3: Attempting cache fallback');
@@ -90,6 +101,12 @@ class VideoAgent {
         script = queuedScript.script;
       }
 
+      const scriptText = typeof script === 'string' ? script : script?.script;
+      if (!scriptText) {
+        console.warn('[VideoAgent] Missing script text for HeyGen generation');
+        return null;
+      }
+
       // Verify quota again before calling API
       const quota = await this.checkHeyGenQuota();
       if (quota.remaining <= 0) {
@@ -98,7 +115,7 @@ class VideoAgent {
       }
 
       console.log('[VideoAgent] 🚀 Calling HeyGen API...');
-      const videoResult = await this.heygenService.generateVideo(script);
+      const videoResult = await this.heygenService.generateVideo(scriptText);
       if (!videoResult) {
         console.warn('[VideoAgent] HeyGen returned null');
         return null;
@@ -117,7 +134,7 @@ class VideoAgent {
       await this.db.cacheResult('video', {
         file: downloadResult.fileName,
         url: completedVideo.videoUrl,
-        topic: script.substring(0, 50),
+        topic: scriptText.substring(0, 50),
         method: 'heygen',
       });
 
@@ -127,7 +144,7 @@ class VideoAgent {
         videoId: completedVideo.videoId,
         videoUrl: completedVideo.videoUrl,
         generator: 'heygen-premium',
-        duration: 45,
+        duration: 90,
         quality: '🎬 Premium (AI Avatar)',
         tier: 1,
       };
@@ -150,42 +167,64 @@ class VideoAgent {
         return null;
       }
 
-      if (!script) {
+      let payload = script;
+      if (!payload) {
         const queuedScript = await this.db.getQueuedScript();
         if (!queuedScript) {
           console.log('[VideoAgent] No script for stock video generation');
           return null;
         }
-        script = queuedScript.script;
+        payload = {
+          script: queuedScript.script,
+          videoPrompt: queuedScript.hooks?.videoPrompt || queuedScript.topic,
+          scenes: queuedScript.hooks?.scenes || null,
+        };
       }
 
-      const topic = script.substring(0, 50);
+      const scriptText = typeof payload === 'string' ? payload : payload.script;
+      const videoPrompt = typeof payload === 'string' ? payload : payload.videoPrompt;
+      const scenes = this.normalizeScenes(scriptText, payload?.scenes);
+      const topic = (scriptText || '').substring(0, 70);
 
-      // Step 1: Find stock video
-      console.log('[VideoAgent] 🔍 Searching for stock video...');
-      const videoSource = await this.stockVideoService.searchVideoForTopic(topic);
-      console.log('[VideoAgent] ✓ Found:', videoSource.title);
+      // Step 1: Find stock videos per scene
+      console.log('[VideoAgent] 🔍 Searching stock video clips for scenes...');
+      const sceneSources = await this.stockVideoService.searchVideosForScenes(scenes, videoPrompt || topic);
+      const downloadedVideos = [];
+      for (const source of sceneSources) {
+        const downloaded = await this.stockVideoService.downloadVideo(source.videoUrl, source.videoId);
+        downloadedVideos.push({
+          ...source,
+          ...downloaded,
+        });
+      }
+      console.log('[VideoAgent] ✓ Retrieved scene clips:', downloadedVideos.length);
 
-      // Step 2: Generate TTS audio
-      console.log('[VideoAgent] 🎙️ Generating text-to-speech...');
-      const audioData = await this.ttsService.generateAudio(script);
-      console.log('[VideoAgent] ✓ Audio prepared (format:', audioData.format + ')');
+      // Step 2: Generate scene-level TTS audio
+      console.log('[VideoAgent] 🎙️ Generating scene voiceover...');
+      const audioData = await this.ttsService.generateSceneAudio(scenes);
+      console.log('[VideoAgent] ✓ Scene audio prepared (format:', audioData.format + ')');
 
       // Step 3: Prepare text overlay
       const textOverlay = {
-        script: script.substring(0, 150),
+        script: scriptText.substring(0, 200),
         position: 'bottom',
       };
 
       // Step 4: Compose reel
       console.log('[VideoAgent] 🎬 Composing final reel...');
       const components = this.compositionService.prepareComponents(
-        videoSource,
-        { script },
+        {
+          ...downloadedVideos[0],
+          videoUrl: downloadedVideos[0]?.videoPath,
+        },
+        { script: scriptText, scenes, videoPrompt },
         audioData,
         topic,
         new Date().toISOString().split('T')[0]
       );
+
+      components.videoSources = downloadedVideos;
+      components.scenes = audioData.scenes?.length ? audioData.scenes : scenes;
 
       const reel = await this.compositionService.composeReel(components);
       console.log('[VideoAgent] ✓ Reel composed');
@@ -204,15 +243,46 @@ class VideoAgent {
         videoId: reel.videoId,
         videoUrl: reel.videoUrl,
         generator: 'stock-video-free',
-        duration: reel.duration || 30,
+        duration: reel.duration || 90,
         quality: reel.quality || '📹 Free (Stock + Text)',
         tier: 2,
         composition: reel.composition,
+        scenes: components.scenes,
       };
     } catch (error) {
       console.error('[VideoAgent] ❌ Stock video generation failed:', error.message);
       return null;
     }
+  }
+
+  normalizeScenes(script, rawScenes) {
+    if (Array.isArray(rawScenes) && rawScenes.length > 0) {
+      return rawScenes
+        .map((scene, index) => ({
+          index,
+          text: String(scene?.text || '').trim(),
+          visualPrompt: String(scene?.visualPrompt || scene?.text || '').trim(),
+          duration: Math.max(4, Math.min(10, Number(scene?.duration) || 6)),
+        }))
+        .filter((scene) => scene.text);
+    }
+
+    const lines = String(script || '')
+      .split(/(?<=[.!?])\s+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const chunks = [];
+    for (let i = 0; i < lines.length; i++) {
+      chunks.push({
+        index: i,
+        text: lines[i],
+        visualPrompt: lines[i],
+        duration: 6,
+      });
+    }
+
+    return chunks.slice(0, 20);
   }
 
   /**

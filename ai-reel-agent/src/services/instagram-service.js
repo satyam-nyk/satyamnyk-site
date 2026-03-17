@@ -3,6 +3,7 @@ import { API_LIMITS, INSTAGRAM_CONFIG } from '../config/constants.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
 
 /**
  * InstagramService - Handles Instagram Graph API interactions
@@ -115,6 +116,74 @@ class InstagramService {
     }
   }
 
+  async postStaticCurrentAffairs(summaryText, topic = 'Current Affairs') {
+    try {
+      const text = String(summaryText || '').trim();
+      if (!text) {
+        throw new Error('Summary text is required for static post');
+      }
+
+      if (!(await this.apiLimiter.canMakeRequest('INSTAGRAM'))) {
+        console.warn('[InstagramService] Instagram rate limit reached for static post');
+        return null;
+      }
+
+      const imagePath = await this.createStaticPostImage(topic, text);
+      const imageUrl = await this.uploadLocalFile(imagePath, 'image/png');
+      if (!imageUrl) {
+        console.warn('[InstagramService] Could not upload static post image');
+        return null;
+      }
+
+      const caption = `${text}\n\n#CurrentAffairs #DailyHighlights #NewsUpdate`;
+      const limitedCaption = caption.length > INSTAGRAM_CONFIG.CAPTION_MAX_LENGTH
+        ? caption.slice(0, INSTAGRAM_CONFIG.CAPTION_MAX_LENGTH - 1)
+        : caption;
+
+      const containerResponse = await axios.post(
+        `${this.baseURL}/${this.businessAccountId}/media`,
+        {
+          image_url: imageUrl,
+          caption: limitedCaption,
+          access_token: this.accessToken,
+        },
+        { timeout: this.timeout }
+      );
+
+      const mediaId = containerResponse.data?.id;
+      if (!mediaId) {
+        throw new Error('No media ID returned for static post');
+      }
+
+      await this.apiLimiter.consumeLimit('INSTAGRAM', 1);
+
+      const publishResponse = await axios.post(
+        `${this.baseURL}/${this.businessAccountId}/media_publish`,
+        {
+          creation_id: mediaId,
+          access_token: this.accessToken,
+        },
+        { timeout: this.timeout }
+      );
+
+      const postId = publishResponse.data?.id;
+      return {
+        postId,
+        mediaId,
+        url: `https://instagram.com/p/${postId}`,
+        sourceImageUrl: imageUrl,
+        status: 'posted',
+        postedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      if (error.response?.data) {
+        console.error('[InstagramService] Static post API error details:', JSON.stringify(error.response.data));
+      }
+      console.error('[InstagramService] Error posting static current affairs:', error.message);
+      throw error;
+    }
+  }
+
   resolveVideoPath(videoPath) {
     if (!videoPath) {
       return null;
@@ -136,9 +205,13 @@ class InstagramService {
   }
 
   async uploadLocalVideo(videoPath) {
-    const fileName = path.basename(videoPath);
-    const buffer = fs.readFileSync(videoPath);
-    const blob = new Blob([buffer], { type: 'video/mp4' });
+    return this.uploadLocalFile(videoPath, 'video/mp4');
+  }
+
+  async uploadLocalFile(filePath, mimeType = 'application/octet-stream') {
+    const fileName = path.basename(filePath);
+    const buffer = fs.readFileSync(filePath);
+    const blob = new Blob([buffer], { type: mimeType });
 
     const catboxForm = new FormData();
     catboxForm.append('reqtype', 'fileupload');
@@ -167,6 +240,65 @@ class InstagramService {
     }
 
     return null;
+  }
+
+  async createStaticPostImage(topic, summary) {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const outputDir = path.resolve(__dirname, '../../videos/static');
+    fs.mkdirSync(outputDir, { recursive: true });
+    const outputPath = path.join(outputDir, `current_affairs_${Date.now()}.png`);
+
+    const safeTopic = String(topic || 'Current Affairs').replace(/"/g, '\\"').slice(0, 70);
+    const safeSummary = String(summary || '').replace(/"/g, '\\"').slice(0, 450);
+
+    const script = [
+      'from PIL import Image, ImageDraw, ImageFont',
+      'import textwrap, sys',
+      'w, h = 1080, 1080',
+      'img = Image.new("RGB", (w, h), (18, 33, 58))',
+      'draw = ImageDraw.Draw(img)',
+      'draw.rectangle((0, 0, w, 14), fill=(236, 190, 55))',
+      'draw.rectangle((0, h-14, w, h), fill=(236, 190, 55))',
+      'font_title = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 64)',
+      'font_topic = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 44)',
+      'font_body = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 38)',
+      'draw.text((70, 90), "CURRENT AFFAIRS", font=font_title, fill=(252, 252, 252))',
+      `topic = "${safeTopic}"`,
+      'topic_lines = textwrap.wrap(topic, width=28)[:2]',
+      'y = 220',
+      'for line in topic_lines:',
+      '  draw.text((70, y), line, font=font_topic, fill=(236, 190, 55))',
+      '  y += 58',
+      `summary = "${safeSummary}"`,
+      'body_lines = textwrap.wrap(summary, width=40)[:7]',
+      'y = 390',
+      'for line in body_lines:',
+      '  draw.text((70, y), line, font=font_body, fill=(245, 245, 245))',
+      '  y += 52',
+      'draw.text((70, 980), "@GlobalDailyDose", font=font_body, fill=(188, 200, 214))',
+      'img.save(sys.argv[1])',
+    ].join('\n');
+
+    await new Promise((resolve, reject) => {
+      const proc = spawn('python3', ['-c', script, outputPath], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let stderr = '';
+      proc.stderr.on('data', (buf) => {
+        stderr += buf.toString();
+      });
+      proc.on('error', reject);
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+        reject(new Error(stderr || `static post image render failed with code ${code}`));
+      });
+    });
+
+    return outputPath;
   }
 
   /**

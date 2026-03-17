@@ -58,6 +58,19 @@ CREATE TABLE IF NOT EXISTS daily_posts (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Static Current-Affairs Posts Table
+CREATE TABLE IF NOT EXISTS static_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT UNIQUE NOT NULL,
+    topic TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    word_count INTEGER DEFAULT 0,
+    source TEXT DEFAULT 'llm',
+    status TEXT DEFAULT 'ready',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- API Limits Tracking Table
 CREATE TABLE IF NOT EXISTS api_limits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,5 +120,6 @@ CREATE INDEX IF NOT EXISTS idx_script_queue_status ON script_queue(status);
 CREATE INDEX IF NOT EXISTS idx_script_queue_generated_date ON script_queue(generated_date);
 CREATE INDEX IF NOT EXISTS idx_daily_posts_date ON daily_posts(date);
 CREATE INDEX IF NOT EXISTS idx_daily_posts_status ON daily_posts(status);
+CREATE INDEX IF NOT EXISTS idx_static_posts_date ON static_posts(date);
 CREATE INDEX IF NOT EXISTS idx_video_cache_topic ON video_cache(topic);
 CREATE INDEX IF NOT EXISTS idx_topics_cache_used_count ON topics_cache(used_count);

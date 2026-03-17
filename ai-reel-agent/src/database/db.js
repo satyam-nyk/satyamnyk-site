@@ -415,6 +415,61 @@ class Database {
     });
   }
 
+  async upsertStaticPost(date, data) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        INSERT INTO static_posts (date, topic, summary, word_count, source, status)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(date) DO UPDATE SET
+          topic = excluded.topic,
+          summary = excluded.summary,
+          word_count = excluded.word_count,
+          source = excluded.source,
+          status = excluded.status,
+          updated_at = CURRENT_TIMESTAMP
+      `;
+
+      this.db.run(
+        query,
+        [
+          date,
+          data.topic,
+          data.summary,
+          data.wordCount || 0,
+          data.source || 'llm',
+          data.status || 'ready',
+        ],
+        (err) => {
+          if (err) {
+            console.error('Error upserting static post:', err);
+            reject(err);
+            return;
+          }
+          resolve({ date, ...data });
+        }
+      );
+    });
+  }
+
+  async getLatestStaticPost() {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT id, date, topic, summary, word_count, source, status, created_at, updated_at
+        FROM static_posts
+        ORDER BY date DESC
+        LIMIT 1
+      `;
+      this.db.get(query, (err, row) => {
+        if (err) {
+          console.error('Error getting latest static post:', err);
+          reject(err);
+          return;
+        }
+        resolve(row || null);
+      });
+    });
+  }
+
   /**
    * Get monthly trending topics
    */

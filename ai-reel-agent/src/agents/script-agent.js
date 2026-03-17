@@ -1,12 +1,12 @@
-import { SCRIPT_CONFIG } from '../config/constants.js';
+import { SCRIPT_CONFIG, VIDEO_CONFIG } from '../config/constants.js';
 
 /**
  * ScriptAgent - Handles script generation and optimization
  * Creates engaging reel scripts with hooks, CTAs, and trending language
  */
 class ScriptAgent {
-  constructor(geminiService, database, apiLimiter) {
-    this.geminiService = geminiService;
+  constructor(llmService, database, apiLimiter) {
+    this.llmService = llmService;
     this.db = database;
     this.apiLimiter = apiLimiter;
   }
@@ -22,17 +22,12 @@ class ScriptAgent {
       }
 
       console.log('[ScriptAgent] Generating script for topic:', topic.topic);
-
-      // Check if we can make API calls
-      const canCallAPI = await this.apiLimiter.canMakeRequest('GEMINI');
       let scriptData = null;
 
-      if (canCallAPI) {
-        try {
-          scriptData = await this.geminiService.generateScript(topic.topic);
-        } catch (error) {
-          console.warn('[ScriptAgent] Error generating script with Gemini:', error.message);
-        }
+      try {
+        scriptData = await this.llmService.generateScript(topic.topic);
+      } catch (error) {
+        console.warn('[ScriptAgent] Error generating script with LLM provider:', error.message);
       }
 
       // Fallback to template if API fails or limit reached
@@ -47,13 +42,17 @@ class ScriptAgent {
       // Add hooks and CTAs
       const enrichedScript = this.addHooks(finalScript || scriptData.script);
 
+      const scenes = this.normalizeScenes(scriptData.scenes, enrichedScript.script);
+
       const result = {
         topic: topic.topic,
         script: enrichedScript.script,
-        duration: scriptData.duration || 45,
+        duration: scriptData.duration || VIDEO_CONFIG.TARGET_DURATION || 90,
         hooks: enrichedScript.hooks,
         cta: enrichedScript.cta,
         emojis: scriptData.emojis || [],
+        videoPrompt: scriptData.videoPrompt || this.generateVideoPromptFallback(topic.topic),
+        scenes,
         originalScript: scriptData.script,
       };
 
@@ -73,11 +72,11 @@ class ScriptAgent {
       if (!script) return script;
 
       try {
-        // Use Gemini to optimize if quota available
-        const optimized = await this.geminiService.optimizeForReels(script);
+        // Use configured LLM provider to optimize if quota is available
+        const optimized = await this.llmService.optimizeForReels(script);
         return optimized;
       } catch (error) {
-        console.warn('[ScriptAgent] Error optimizing with Gemini:', error.message);
+        console.warn('[ScriptAgent] Error optimizing with LLM provider:', error.message);
         return script; // Return unoptimized script
       }
     } catch (error) {
@@ -88,58 +87,150 @@ class ScriptAgent {
 
   /**
    * Generate a template script when API fails
-   * Returns reliable fallback script with structure
+  * Returns reliable fallback script with structure - long-form narration
    */
   generateTemplateScript(topic) {
     const templates = [
       {
         script: `You won't believe what I just discovered about ${topic}! 🤯
         
-        Most people don't know this, but...
+        Most people don't know this, but here's the full story...
         
-        If you want to learn more about ${topic}, this might surprise you.
+        If you want to understand ${topic} completely, this is mind-blowing...
         
-        Comment below what you think! 👇`,
-        duration: 45,
-        hooks: [`You won't believe`, 'this might surprise you'],
-        cta: 'Comment below what you think',
-        emojis: ['🤯', '👇'],
+        Think about it this way: the real reason why it matters is because it affects everything we do daily.
+        
+        Here's what you need to remember about ${topic}...
+        
+        Comment below what you think! 👇 Drop a like if this opened your eyes! ❤️`,
+        duration: VIDEO_CONFIG.TARGET_DURATION || 90,
+        hooks: [`You won't believe`, 'this is mind-blowing'],
+        cta: 'Comment below and drop a like',
+        emojis: ['🤯', '❤️', '👇'],
       },
       {
         script: `Let me tell you about ${topic} 🎯
-        
-        Here's why everyone is talking about this...
-        
-        The amazing thing is...
-        
-        Drop a like if you agree! ❤️`,
-        duration: 40,
-        hooks: [`Let me tell you`, 'everyone is talking about'],
-        cta: 'Drop a like if you agree',
-        emojis: ['🎯', '❤️'],
+
+        Here's why everyone is suddenly talking about this recent trend...
+
+        The fascinating part that nobody mentions is actually this...
+
+        Most people miss this important detail about ${topic}.
+
+        Here's what makes it so special and why you should care...
+
+        What's your take on ${topic}? Let's discuss in the comments! 💬
+
+        Drop a like if you found this helpful! ❤️`,
+        duration: VIDEO_CONFIG.TARGET_DURATION || 90,
+        hooks: ['Let me tell you', 'everyone is suddenly talking about', 'Most people miss this'],
+        cta: "Let's discuss in the comments",
+        emojis: ['🎯', '💬', '❤️'],
       },
       {
-        script: `${topic} just got interesting 🔥
-        
-        Wait for the end...
-        
-        This is why it matters.
-        
-        What's your take? Let's discuss! 💬`,
-        duration: 50,
-        hooks: ['just got interesting', 'wait for the end'],
-        cta: "What's your take? Let's discuss",
-        emojis: ['🔥', '💬'],
+        script: `${topic} just got incredibly interesting 🔥
+
+        Wait for the end because this will blow your mind...
+
+        Here's what changed everything about ${topic}...
+
+        The reason people are obsessed with this is clear when you understand the full context.
+
+        This is exactly why ${topic} matters so much in 2026...
+
+        You need to know this information about ${topic} before deciding anything.
+
+        What do you think? Comment below and don't forget to like! 👍`,
+        duration: VIDEO_CONFIG.TARGET_DURATION || 90,
+        hooks: ['just got incredibly interesting', 'wait for the end', 'This will blow your mind'],
+        cta: "Comment below and like",
+        emojis: ['🔥', '👍', '💡'],
       },
     ];
 
     const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
     return {
       script: randomTemplate.script.replace(/\${topic}/g, topic),
-      duration: randomTemplate.duration,
+      duration: VIDEO_CONFIG.TARGET_DURATION || 90,
       hooks: randomTemplate.hooks,
       cta: randomTemplate.cta,
       emojis: randomTemplate.emojis,
+      videoPrompt: this.generateVideoPromptFallback(topic),
+    };
+  }
+
+  generateVideoPromptFallback(topic) {
+    return `Cinematic vertical 9:16 video about ${topic}, dynamic camera movement, clean modern visuals, dramatic but natural lighting, high detail, realistic textures, social media reel style, 4k quality.`;
+  }
+
+  normalizeScenes(rawScenes, script) {
+    if (Array.isArray(rawScenes) && rawScenes.length > 0) {
+      const normalized = rawScenes
+        .map((scene, index) => ({
+          text: String(scene?.text || '').trim(),
+          duration: Math.max(4, Math.min(10, Number(scene?.duration) || 6)),
+          visualPrompt: String(scene?.visualPrompt || scene?.text || '').trim(),
+          index,
+        }))
+        .filter((scene) => scene.text);
+
+      if (normalized.length > 0) {
+        return normalized;
+      }
+    }
+
+    const lines = String(script || '')
+      .split(/(?<=[.!?])\s+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const fallback = (lines.length ? lines : [String(script || '').trim()])
+      .filter(Boolean)
+      .map((line, index) => ({
+        text: line,
+        duration: 6,
+        visualPrompt: line,
+        index,
+      }));
+
+    return fallback.slice(0, 20);
+  }
+
+  async generateStaticCurrentAffairsPost(topicData) {
+    const maxWords = SCRIPT_CONFIG.STATIC_POST?.MAX_WORDS || 50;
+    const trendDate = topicData?.trendDate || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const topic = String(topicData?.topic || '').trim();
+    const description = String(topicData?.description || '').trim();
+
+    if (!topic) {
+      throw new Error('Topic is required for static current-affairs post');
+    }
+
+    const llmPost = this.llmService?.generateStaticCurrentAffairsPost
+      ? await this.llmService.generateStaticCurrentAffairsPost(`${topic}. ${description}`, trendDate)
+      : null;
+
+    if (llmPost?.post) {
+      const words = llmPost.post.split(/\s+/).filter(Boolean);
+      return {
+        topic,
+        trendDate,
+        summary: words.slice(0, maxWords).join(' '),
+        wordCount: Math.min(words.length, maxWords),
+        source: 'llm',
+      };
+    }
+
+    const fallbackText = `Yesterday's highlight: ${topic}. ${description || 'Major updates shaped policy, markets, and public debate.'} Follow for concise daily current-affairs updates.`
+      .replace(/\s+/g, ' ')
+      .trim();
+    const words = fallbackText.split(/\s+/).filter(Boolean);
+    return {
+      topic,
+      trendDate,
+      summary: words.slice(0, maxWords).join(' '),
+      wordCount: Math.min(words.length, maxWords),
+      source: 'template',
     };
   }
 
@@ -207,7 +298,12 @@ class ScriptAgent {
             topic: scriptData.topic,
             script: scriptData.script,
             duration: scriptData.duration,
-            hooks: { primary: scriptData.hooks, cta: scriptData.cta },
+            hooks: {
+              primary: scriptData.hooks,
+              cta: scriptData.cta,
+              videoPrompt: scriptData.videoPrompt || this.generateVideoPromptFallback(scriptData.topic),
+              scenes: scriptData.scenes || this.normalizeScenes(null, scriptData.script),
+            },
           });
 
           // Small delay between requests
@@ -276,7 +372,7 @@ class ScriptAgent {
       }
 
       // Check duration
-      if (script.duration < 30 || script.duration > 60) {
+      if (script.duration < (VIDEO_CONFIG.DURATION_MIN || 60) || script.duration > (VIDEO_CONFIG.DURATION_MAX || 120)) {
         console.warn('[ScriptAgent] Invalid duration');
         return false;
       }

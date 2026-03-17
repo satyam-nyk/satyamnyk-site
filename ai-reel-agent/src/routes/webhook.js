@@ -1,5 +1,6 @@
 import express from 'express';
 import { STATUS, ERROR_MESSAGES, INSTAGRAM_CONFIG } from '../config/constants.js';
+import fs from 'fs';
 
 /**
  * Webhook Routes
@@ -14,6 +15,28 @@ export function createWebhookRouter(
   instagramService
 ) {
   const router = express.Router();
+  let dailyGenerationInProgress = false;
+  let manualPostInProgress = false;
+
+  function getInstagramVideoInput(videoData) {
+    if (videoData?.videoPath && fs.existsSync(videoData.videoPath)) {
+      return videoData.videoPath;
+    }
+
+    return videoData?.videoUrl || videoData?.videoPath;
+  }
+
+  function buildInstagramCaption(scriptText) {
+    const hashtags = INSTAGRAM_CONFIG.HASHTAGS.slice(0, 10).join(' ');
+    const maxLen = INSTAGRAM_CONFIG.CAPTION_MAX_LENGTH || 2200;
+    const baseScript = String(scriptText || '').replace(/\s+/g, ' ').trim();
+    const reserved = hashtags.length + 2;
+    const scriptMax = Math.max(100, maxLen - reserved);
+    const safeScript = baseScript.length > scriptMax
+      ? `${baseScript.slice(0, scriptMax - 1).trim()}…`
+      : baseScript;
+    return `${safeScript}\n\n${hashtags}`;
+  }
 
   /**
    * Middleware to verify webhook signature
@@ -51,6 +74,11 @@ export function createWebhookRouter(
    * Triggers the full pipeline: research -> script -> video -> post
    */
   router.post('/generate-daily-reel', verifyWebhookSignature, async (req, res) => {
+    if (dailyGenerationInProgress) {
+      return res.status(429).json({ success: false, error: 'Daily generation already in progress' });
+    }
+
+    dailyGenerationInProgress = true;
     const startTime = Date.now();
     let postData = null;
 
@@ -77,6 +105,31 @@ export function createWebhookRouter(
         throw new Error('Failed to research topic');
       }
 
+      // Step 1b: Generate static current-affairs post from yesterday's trend
+      let staticPost = null;
+      let staticPostPublishResult = null;
+      try {
+        const yesterdayTopic = await researchAgent.researchYesterdaysTrendingTopic();
+        staticPost = await scriptAgent.generateStaticCurrentAffairsPost(yesterdayTopic);
+        if (staticPost) {
+          await database.upsertStaticPost(today, {
+            ...staticPost,
+            status: 'ready',
+          });
+
+          try {
+            staticPostPublishResult = await instagramService.postStaticCurrentAffairs(
+              staticPost.summary,
+              staticPost.topic
+            );
+          } catch (staticPostError) {
+            console.warn('[Webhook] Static Instagram post failed:', staticPostError.message);
+          }
+        }
+      } catch (error) {
+        console.warn('[Webhook] Static post generation skipped:', error.message);
+      }
+
       // Step 2: Generate Script
       console.log('[Webhook] Step 2: Generating script...');
       const scriptData = await scriptAgent.generateScript(topic);
@@ -86,15 +139,19 @@ export function createWebhookRouter(
 
       // Step 3: Generate Video
       console.log('[Webhook] Step 3: Generating video...');
-      const videoData = await videoAgent.generateVideoForDay(scriptData.script);
+      const videoData = await videoAgent.generateVideoForDay({
+        script: scriptData.script,
+        videoPrompt: scriptData.videoPrompt,
+        scenes: scriptData.scenes,
+      });
       if (!videoData) {
         throw new Error('Failed to generate video or use cached video');
       }
 
       // Step 4: Post to Instagram
       console.log('[Webhook] Step 4: Posting to Instagram...');
-      const caption = `${scriptData.script}\n\n${INSTAGRAM_CONFIG.HASHTAGS.slice(0, 10).join(' ')}`;
-      const instagramVideoInput = videoData.videoUrl || videoData.videoPath;
+      const caption = buildInstagramCaption(scriptData.script);
+      const instagramVideoInput = getInstagramVideoInput(videoData);
 
       let instagramResult = null;
       try {
@@ -132,6 +189,8 @@ export function createWebhookRouter(
         data: {
           date: today,
           topic: topic.topic,
+          staticPost,
+          staticPostInstagram: staticPostPublishResult,
           videoId: videoData.videoId,
           postId: instagramResult?.postId || null,
           generator: videoData.generator,
@@ -163,6 +222,8 @@ export function createWebhookRouter(
         duration,
         timestamp: new Date().toISOString(),
       });
+    } finally {
+      dailyGenerationInProgress = false;
     }
   });
 
@@ -252,8 +313,27 @@ export function createWebhookRouter(
    * Manually trigger posting of queued script
    */
   router.post('/manual-post', verifyWebhookSignature, async (req, res) => {
+    if (manualPostInProgress) {
+      return res.status(429).json({ success: false, error: 'Manual post already in progress' });
+    }
+
+    manualPostInProgress = true;
     try {
       console.log('[Webhook] Received manual post request');
+      const forcePost = req.query.force === '1' || req.query.force === 'true';
+
+      const today = new Date().toISOString().split('T')[0];
+      const todayPost = await database.getTodayPost();
+      if (!forcePost && todayPost?.status === STATUS.POSTED && todayPost?.instagram_post_id) {
+        return res.status(409).json({
+          success: false,
+          error: 'A post already exists for today. Use ?force=1 to override.',
+          data: {
+            date: today,
+            postId: todayPost.instagram_post_id,
+          },
+        });
+      }
 
       // Get next queued script
       const script = await scriptAgent.getNextScript();
@@ -265,7 +345,11 @@ export function createWebhookRouter(
       }
 
       // Generate video
-      const video = await videoAgent.generateVideoForDay();
+      const video = await videoAgent.generateVideoForDay({
+        script: script.script,
+        videoPrompt: script.hooks?.videoPrompt,
+        scenes: script.hooks?.scenes,
+      });
       if (!video) {
         return res.status(500).json({
           success: false,
@@ -274,8 +358,8 @@ export function createWebhookRouter(
       }
 
       // Post to Instagram
-      const caption = `${script.script}\n\n${INSTAGRAM_CONFIG.HASHTAGS.slice(0, 10).join(' ')}`;
-      const instagramVideoInput = video.videoUrl || video.videoPath;
+      const caption = buildInstagramCaption(script.script);
+      const instagramVideoInput = getInstagramVideoInput(video);
       const instagramResult = await instagramService.postReel(instagramVideoInput, caption);
 
       if (!instagramResult) {
@@ -287,6 +371,16 @@ export function createWebhookRouter(
 
       // Update script status
       await database.updateScriptStatus(script.id, STATUS.POSTED, video.videoId, instagramResult.postId);
+
+      // Mirror manual posting into daily_posts table for dedupe and dashboard accuracy
+      await database.upsertDailyPost(today, {
+        topic: script.topic,
+        script: script.script,
+        videoId: video.videoId,
+        status: STATUS.POSTED,
+        method: video.generator,
+      });
+      await database.updatePostWithInstagram(today, instagramResult.postId, STATUS.POSTED);
 
       console.log('[Webhook] Manual post successful');
 
@@ -302,6 +396,57 @@ export function createWebhookRouter(
       });
     } catch (error) {
       console.error('[Webhook] Error in manual post:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    } finally {
+      manualPostInProgress = false;
+    }
+  });
+
+  /**
+   * POST /api/webhook/generate-static-current-affairs
+   * Generates one <50-word static post from yesterday's trending current-affairs topic
+   */
+  router.post('/generate-static-current-affairs', verifyWebhookSignature, async (req, res) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const topic = await researchAgent.researchYesterdaysTrendingTopic();
+      const staticPost = await scriptAgent.generateStaticCurrentAffairsPost(topic);
+
+      if (!staticPost?.summary) {
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to generate static current-affairs post',
+        });
+      }
+
+      await database.upsertStaticPost(today, {
+        ...staticPost,
+        status: 'ready',
+      });
+
+      let staticPostInstagram = null;
+      try {
+        staticPostInstagram = await instagramService.postStaticCurrentAffairs(
+          staticPost.summary,
+          staticPost.topic
+        );
+      } catch (error) {
+        console.warn('[Webhook] Could not publish static post to Instagram:', error.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Static current-affairs post generated',
+        data: {
+          ...staticPost,
+          instagram: staticPostInstagram,
+        },
+      });
+    } catch (error) {
+      console.error('[Webhook] Error generating static current-affairs post:', error.message);
       return res.status(500).json({
         success: false,
         error: error.message,

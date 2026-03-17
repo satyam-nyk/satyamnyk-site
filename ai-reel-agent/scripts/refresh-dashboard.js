@@ -109,8 +109,9 @@ async function buildSnapshot() {
       ]);
     }
 
-    const [todayPost, apiStatus, postStats, queueStats, cacheStats, insights, recommendations, analytics, history] = await Promise.all([
+    const [todayPost, latestStaticPost, apiStatus, postStats, queueStats, cacheStats, insights, recommendations, analytics, history] = await Promise.all([
       database.getTodayPost(),
+      database.getLatestStaticPost().catch(() => null),
       apiLimiter.getStatus(),
       database.getAllPostStats(),
       scriptAgent.getQueueStats().catch(() => ({ total: 0, pending: 0, posted: 0 })),
@@ -164,6 +165,7 @@ async function buildSnapshot() {
       analytics: serializeAnalytics(analytics),
       insights,
       recommendations,
+      staticPost: latestStaticPost,
       history,
       instagram: {
         account: instagramAccount,

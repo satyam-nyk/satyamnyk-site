@@ -3,8 +3,8 @@
  * Generates trending topics or falls back to cached topics if API limit reached
  */
 class ResearchAgent {
-  constructor(geminiService, database, apiLimiter) {
-    this.geminiService = geminiService;
+  constructor(llmService, database, apiLimiter) {
+    this.llmService = llmService;
     this.db = database;
     this.apiLimiter = apiLimiter;
   }
@@ -18,29 +18,22 @@ class ResearchAgent {
     try {
       console.log('[ResearchAgent] Researching topics for today...');
 
-      // Check if we can make API calls
-      const canCallAPI = await this.apiLimiter.canMakeRequest('GEMINI');
-
       let topic = null;
 
-      if (canCallAPI) {
-        try {
-          topic = await this.geminiService.generateTopic();
-          if (topic) {
-            // Cache the topic
-            await this.db.cacheResult('topic', {
-              topic: topic.topic,
-              description: topic.description,
-              alternatives: topic.keywords,
-              score: 10,
-            });
-          }
-        } catch (error) {
-          console.warn('[ResearchAgent] Error generating topic with Gemini:', error.message);
-          // Will fall back to cached topic
+      try {
+        topic = await this.llmService.generateTopic();
+        if (topic) {
+          // Cache the topic
+          await this.db.cacheResult('topic', {
+            topic: topic.topic,
+            description: topic.description,
+            alternatives: topic.keywords,
+            score: 10,
+          });
         }
-      } else {
-        console.log('[ResearchAgent] Gemini API limit reached, falling back to cached topic');
+      } catch (error) {
+        console.warn('[ResearchAgent] Error generating topic with LLM provider:', error.message);
+        // Will fall back to cached topic
       }
 
       // If topic generation failed or API limit reached, use cached topic
@@ -50,11 +43,11 @@ class ResearchAgent {
           topic.source = 'cache';
         }
       } else {
-        topic.source = 'gemini';
+        topic.source = 'llm';
       }
 
       if (!topic) {
-        throw new Error('Could not obtain topic from Gemini or cache');
+        throw new Error('Could not obtain topic from LLM provider or cache');
       }
 
       // Update cache usage
@@ -72,6 +65,73 @@ class ResearchAgent {
       return topic;
     } catch (error) {
       console.error('[ResearchAgent] Error in topic research:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Research yesterday's trending topic
+   * Focuses on topics that were trending the day before
+   * Returns: {topic, description, hook, keywords, trendDate, source}
+   */
+  async researchYesterdaysTrendingTopic() {
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      console.log('[ResearchAgent] Researching trending topics from yesterday:', yesterdayStr);
+
+      let topic = null;
+
+      try {
+        topic = await this.llmService.generateYesterdaysTrendingTopic();
+        if (topic) {
+          // Cache the yesterday topic
+          await this.db.cacheResult('topic', {
+            topic: topic.topic,
+            description: topic.description,
+            alternatives: topic.keywords,
+            score: 10,
+          });
+        }
+      } catch (error) {
+        console.warn('[ResearchAgent] Error generating yesterday trending topic with LLM provider:', error.message);
+        // Will fall back to cached topic
+      }
+
+      // If topic generation failed or API limit reached, use cached topic
+      if (!topic) {
+        topic = await this.getCachedTopicIfLimitReached();
+        if (topic) {
+          topic.source = 'cache';
+        }
+      } else {
+        topic.source = 'llm';
+      }
+
+      if (!topic) {
+        throw new Error('Could not obtain yesterday trending topic from LLM provider or cache');
+      }
+
+      // Add yesterday's date information
+      topic.trendDate = yesterdayStr;
+
+      // Update cache usage
+      if (topic.source === 'cache') {
+        await this.db.db.run(
+          'UPDATE topics_cache SET used_count = used_count + 1, last_used_date = ? WHERE topic = ?',
+          [yesterdayStr, topic.topic],
+          (err) => {
+            if (err) console.error('Error updating yesterday topic cache:', err);
+          }
+        );
+      }
+
+      console.log('[ResearchAgent] Yesterday topic research complete:', topic.topic, 'from', yesterdayStr);
+      return topic;
+    } catch (error) {
+      console.error('[ResearchAgent] Error in yesterday topic research:', error.message);
       throw error;
     }
   }
@@ -138,7 +198,7 @@ class ResearchAgent {
       }
 
       // Generate topics in batch
-      const topics = await this.geminiService.generateTopicsBatch(
+      const topics = await this.llmService.generateTopicsBatch(
         recommendation.topicsToGenerate
       );
 
