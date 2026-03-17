@@ -5,6 +5,7 @@ function fmt(n) {
 
 const DEFAULT_INSTAGRAM_PAGE_URL = 'https://www.instagram.com/globaldailydose/';
 const DEFAULT_YOUTUBE_CHANNEL_URL = 'https://www.youtube.com/';
+const WALL_ITEM_LIMIT = 12;
 
 function fmtDate(date) {
   if (!date) return '--';
@@ -70,6 +71,7 @@ function updateInstagramBadge(pageUrl) {
   const pageLinkSecondaryEl = document.getElementById('ig-page-link-secondary');
   const navIgLinkEl = document.getElementById('nav-ig-link');
   const menuIgLinkEl = document.getElementById('menu-ig-link');
+  const viewAllIgEl = document.getElementById('ig-view-all-link');
   if (!pageLabelEl || !pageCopyEl || !pageLinkEl) return;
 
   const disableLink = (el) => {
@@ -91,6 +93,7 @@ function updateInstagramBadge(pageUrl) {
     disableLink(pageLinkSecondaryEl);
     disableLink(navIgLinkEl);
     disableLink(menuIgLinkEl);
+    disableLink(viewAllIgEl);
     return;
   }
 
@@ -100,6 +103,7 @@ function updateInstagramBadge(pageUrl) {
   enableLink(pageLinkSecondaryEl, pageUrl);
   enableLink(navIgLinkEl, pageUrl);
   enableLink(menuIgLinkEl, pageUrl);
+  enableLink(viewAllIgEl, pageUrl);
 }
 
 function updateYouTubeBadge(channelUrl, channelTitle) {
@@ -109,6 +113,7 @@ function updateYouTubeBadge(channelUrl, channelTitle) {
   const linkSecondaryEl = document.getElementById('yt-channel-link-secondary');
   const navYtLinkEl = document.getElementById('nav-yt-link');
   const menuYtLinkEl = document.getElementById('menu-yt-link');
+  const viewAllYtEl = document.getElementById('yt-view-all-link');
   if (!labelEl || !copyEl || !linkEl) return;
 
   const disableLink = (el) => {
@@ -130,6 +135,7 @@ function updateYouTubeBadge(channelUrl, channelTitle) {
     disableLink(linkSecondaryEl);
     disableLink(navYtLinkEl);
     disableLink(menuYtLinkEl);
+    disableLink(viewAllYtEl);
     return;
   }
 
@@ -139,6 +145,7 @@ function updateYouTubeBadge(channelUrl, channelTitle) {
   enableLink(linkSecondaryEl, channelUrl);
   enableLink(navYtLinkEl, channelUrl);
   enableLink(menuYtLinkEl, channelUrl);
+  enableLink(viewAllYtEl, channelUrl);
 }
 
 function getYouTubeVideoId(input) {
@@ -159,6 +166,15 @@ function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
   const gridEl = document.getElementById('yt-embeds-grid');
   if (!gridEl) return;
 
+  const ensureVisibleYouTubeIframesLoaded = () => {
+    if (gridEl.closest('.wall-panel--hidden')) return;
+    gridEl.querySelectorAll('iframe[data-src]').forEach((iframe) => {
+      if (!iframe.getAttribute('src')) {
+        iframe.setAttribute('src', iframe.getAttribute('data-src'));
+      }
+    });
+  };
+
   const fromYoutube = (youtubeVideos || [])
     .map((item) => {
       const videoId = getYouTubeVideoId(item?.id) || getYouTubeVideoId(item?.snippet?.resourceId?.videoId);
@@ -172,7 +188,7 @@ function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
       };
     })
     .filter(Boolean)
-    .slice(0, 8);
+    .slice(0, WALL_ITEM_LIMIT);
 
   if (!fromYoutube.length) {
     const fallback = (historyRows || [])
@@ -184,7 +200,8 @@ function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
         likes: Number(row.youtube_likes || 0),
         comments: Number(row.youtube_comments || 0),
       }))
-      .slice(0, 8);
+      .filter((row, index, arr) => arr.findIndex((it) => it.videoId === row.videoId) === index)
+      .slice(0, WALL_ITEM_LIMIT);
 
     if (!fallback.length) {
       gridEl.innerHTML = '<p class="note">No published YouTube videos yet — enable YouTube posting to populate this wall.</p>';
@@ -194,7 +211,7 @@ function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
     gridEl.innerHTML = fallback.map((row) => `
       <article class="ig-embed-item yt-embed-item">
         <div class="yt-frame-wrap">
-          <iframe src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+          <iframe data-src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
         </div>
         <div class="ig-card-body">
           <p class="ig-card-caption">${row.title}</p>
@@ -207,13 +224,14 @@ function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
         </div>
       </article>
     `).join('');
+    ensureVisibleYouTubeIframesLoaded();
     return;
   }
 
   gridEl.innerHTML = fromYoutube.map((row) => `
     <article class="ig-embed-item yt-embed-item">
       <div class="yt-frame-wrap">
-        <iframe src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        <iframe data-src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
       </div>
       <div class="ig-card-body">
         <p class="ig-card-caption">${row.title}</p>
@@ -226,6 +244,8 @@ function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
       </div>
     </article>
   `).join('');
+
+  ensureVisibleYouTubeIframesLoaded();
 }
 
 function updateEmbeddedReels(historyRows = [], instagramMedia = []) {
@@ -237,7 +257,7 @@ function updateEmbeddedReels(historyRows = [], instagramMedia = []) {
       const permalink = row?.permalink || '';
       return Boolean(permalink);
     })
-    .slice(0, 16);
+    .slice(0, WALL_ITEM_LIMIT);
 
   const normalizeCaption = (text = '') => {
     const value = String(text || '').replace(/\s+/g, ' ').trim();
@@ -277,7 +297,7 @@ function updateEmbeddedReels(historyRows = [], instagramMedia = []) {
 
   const posted = historyRows
     .filter((row) => row.status === 'posted' && row.instagram_post_id)
-    .slice(0, 16);
+    .slice(0, WALL_ITEM_LIMIT);
 
   if (!posted.length) {
     gridEl.innerHTML = '<p class="note">No published reels yet — run the pipeline to generate your first reel.</p>';
@@ -318,6 +338,16 @@ function initWallTabs() {
         const isTarget = panel.id === `wall-${target}`;
         panel.classList.toggle('wall-panel--hidden', !isTarget);
       });
+
+      // Some desktop browsers delay/skip iframe initialization in hidden containers.
+      if (target === 'youtube') {
+        const ytGrid = document.getElementById('yt-embeds-grid');
+        ytGrid?.querySelectorAll('iframe[data-src]').forEach((iframe) => {
+          if (!iframe.getAttribute('src')) {
+            iframe.setAttribute('src', iframe.getAttribute('data-src'));
+          }
+        });
+      }
     });
   });
 }

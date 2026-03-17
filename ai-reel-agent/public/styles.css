@@ -761,6 +761,19 @@ body {
     font-weight: 600;
 }
 
+.wall-cta-row {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.wall-cta-link[aria-disabled="true"] {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .loading {
     text-align: center;
     color: var(--text-muted);
@@ -870,6 +883,15 @@ body {
 
     .youtube-wall {
         grid-template-columns: 1fr;
+    }
+
+    .wall-cta-row {
+        justify-content: stretch;
+    }
+
+    .wall-cta-link {
+        width: 100%;
+        text-align: center;
     }
 
     .today-meta {

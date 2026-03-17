@@ -266,6 +266,45 @@ class YouTubeService {
     };
   }
 
+  async getRecentUploads(limit = 25, accessToken = null) {
+    const maxItems = Math.max(1, Math.min(Number(limit) || 25, 50));
+    const token = accessToken || (await this.refreshAccessToken());
+
+    const channel = await this.getOwnChannel(token);
+    const uploadsPlaylistId = channel?.contentDetails?.relatedPlaylists?.uploads;
+    if (!uploadsPlaylistId) {
+      return [];
+    }
+
+    const playlistResponse = await axios.get(`${this.baseApiUrl}/playlistItems`, {
+      params: {
+        part: 'snippet,contentDetails',
+        playlistId: uploadsPlaylistId,
+        maxResults: maxItems,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      timeout: this.timeout,
+    });
+
+    const items = playlistResponse.data?.items || [];
+    const orderedIds = items
+      .map((item) => item?.contentDetails?.videoId)
+      .filter(Boolean);
+
+    if (!orderedIds.length) {
+      return [];
+    }
+
+    const statsItems = await this.getVideoStats(orderedIds, token);
+    const byId = new Map(statsItems.map((item) => [item.id, item]));
+
+    return orderedIds
+      .map((id) => byId.get(id))
+      .filter(Boolean);
+  }
+
   /**
    * Fetch channel-level analytics for the last `days` days.
    * Requires the YouTube Analytics API to be enabled in GCP.

@@ -1,5 +1,6 @@
 const SNAPSHOT_URL = 'dashboard-data.json';
 const PAGE_SIZE = 20;
+const WALL_ITEM_LIMIT = 12;
 
 let engagementChart = null;
 let methodChart = null;
@@ -176,8 +177,36 @@ function updateUI(data) {
   updateTrendingTopics(data.insights?.topTopics || data.trendingTopics || []);
   updateMethodChart(data.insights?.methodSplit || []);
   updateRecommendations(data.recommendations || null);
+  updateWallCtas(data);
   updateYouTubeChannelCard(data.youtube || null);
   updateYouTubeWall(data.youtube?.recentVideos || [], data.history || []);
+}
+
+function setLinkState(el, href) {
+  if (!el) return;
+  if (!href) {
+    el.href = '#';
+    el.setAttribute('aria-disabled', 'true');
+    return;
+  }
+  el.href = href;
+  el.removeAttribute('aria-disabled');
+}
+
+function updateWallCtas(data = {}) {
+  const igCta = document.getElementById('dashboard-ig-view-all');
+  const ytCta = document.getElementById('dashboard-yt-view-all');
+
+  const igUsername = data?.instagram?.account?.username;
+  const igUrl = igUsername ? `https://www.instagram.com/${igUsername}/` : null;
+
+  const channel = data?.youtube?.channel || null;
+  const ytUrl = channel?.snippet?.customUrl
+    ? `https://www.youtube.com/${String(channel.snippet.customUrl).replace(/^@/, '@')}`
+    : (channel?.id ? `https://www.youtube.com/channel/${channel.id}` : null);
+
+  setLinkState(igCta, igUrl);
+  setLinkState(ytCta, ytUrl);
 }
 
 function hourTo12h(hourStr) {
@@ -333,7 +362,7 @@ function updateYouTubeWall(youtubeVideos = [], historyRows = []) {
       };
     })
     .filter(Boolean)
-    .slice(0, 8);
+    .slice(0, WALL_ITEM_LIMIT);
 
   const rows = fromYoutube.length
     ? fromYoutube
@@ -345,7 +374,8 @@ function updateYouTubeWall(youtubeVideos = [], historyRows = []) {
         views: Number(row.youtube_views || 0),
         likes: Number(row.youtube_likes || 0),
       }))
-      .slice(0, 8);
+      .filter((row, index, arr) => arr.findIndex((it) => it.id === row.id) === index)
+      .slice(0, WALL_ITEM_LIMIT);
 
   if (!rows.length) {
     container.innerHTML = '<p class="loading">No YouTube videos in snapshot yet.</p>';

@@ -183,8 +183,11 @@ async function buildSnapshot() {
     let youtubeAnalytics = null;
     if (youtubeService) {
       youtubeChannel = await youtubeService.getOwnChannel().catch(() => null);
-      const ids = history.map((row) => row.youtube_video_id).filter(Boolean);
-      youtubeVideos = ids.length ? await youtubeService.getVideoStats(ids).catch(() => []) : [];
+      youtubeVideos = await youtubeService.getRecentUploads(25).catch(() => []);
+      if (!youtubeVideos.length) {
+        const ids = history.map((row) => row.youtube_video_id).filter(Boolean);
+        youtubeVideos = ids.length ? await youtubeService.getVideoStats(ids).catch(() => []) : [];
+      }
       youtubeAnalytics = await youtubeService.getChannelAnalytics(28).catch(() => null);
     }
 

@@ -492,6 +492,13 @@ main { padding-top: 46px; padding-bottom: 64px; }
   align-items: start;
 }
 
+.yt-embeds-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
 .ig-embed-item {
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -556,6 +563,17 @@ main { padding-top: 46px; padding-bottom: 64px; }
 
 .yt-embed-item {
   border-color: rgba(255, 77, 77, 0.28);
+}
+
+.wall-view-all-wrap {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wall-view-all[aria-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 /* ── iframe fix: aspect-ratio parent needs relative positioning
@@ -691,7 +709,21 @@ footer {
     -webkit-overflow-scrolling: touch;
     padding-bottom: 6px;
   }
+  .yt-embeds-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
   .ig-embed-item {
+    min-width: min(78vw, 360px);
+    max-width: min(78vw, 360px);
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+  .yt-embed-item {
     min-width: min(78vw, 360px);
     max-width: min(78vw, 360px);
     scroll-snap-align: start;
@@ -735,6 +767,13 @@ footer {
   .hero-cta .btn,
   .snapshot-cta .btn,
   .ig-quick-actions .btn {
+    width: 100%;
+    text-align: center;
+  }
+  .wall-view-all-wrap {
+    justify-content: stretch;
+  }
+  .wall-view-all-wrap .btn {
     width: 100%;
     text-align: center;
   }
