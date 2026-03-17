@@ -3,6 +3,7 @@ import { API_LIMITS } from '../config/constants.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { spawnSync } from 'child_process';
 
 /**
  * StockVideoService - Fetches free stock videos from Pexels
@@ -17,28 +18,8 @@ class StockVideoService {
     this.timeout = API_LIMITS.STOCK_VIDEO?.TIMEOUT || 10000;
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    this.videosDir = path.resolve(__dirname, '../../videos');
     this.stockDir = path.resolve(__dirname, '../../videos/assets');
     fs.mkdirSync(this.stockDir, { recursive: true });
-    
-    // Default stock videos if API fails
-    this.fallbackVideos = [
-      {
-        title: 'Life Hacks reel (local fallback)',
-        url: path.join(this.videosDir, 'reel_voice_subtitles_1080x1920.mp4'),
-        id: 'fallback_local_lifehacks_1'
-      },
-      {
-        title: 'AI Jobs reel (local fallback)',
-        url: path.join(this.videosDir, 'reel_ai_jobs_2026.mp4'),
-        id: 'fallback_local_ai_jobs_1'
-      },
-      {
-        title: 'Life Hacks reel copy (local fallback)',
-        url: path.join(this.videosDir, 'reel_voice_subtitles_1080x1920.mp4'),
-        id: 'fallback_local_lifehacks_2'
-      }
-    ];
 
     console.log('[StockVideoService] Initialized (Pexels + fallback enabled)');
   }
@@ -49,12 +30,8 @@ class StockVideoService {
    */
   async searchVideoForTopic(topic) {
     try {
-      console.log('[StockVideoService] Searching video for topic:', topic);
-
-      const keywords = this.extractKeywords(topic);
-      console.log('[StockVideoService] Keywords:', keywords);
-      const directQuery = String(topic || '').replace(/\s+/g, ' ').trim();
-      const queryText = directQuery || keywords.join(' ');
+      const queryText = this.buildPexelsQuery(topic);
+      console.log('[StockVideoService] Searching video — query:', queryText);
 
       if (this.apiKey) {
         const query = encodeURIComponent(queryText);
@@ -79,7 +56,7 @@ class StockVideoService {
         }
       }
 
-      const fallback = this.getDeterministicFallbackVideo(topic);
+      const fallback = this.createProceduralFallbackVideo(topic);
       console.log('[StockVideoService] Using fallback video:', fallback.title);
       return {
         videoUrl: fallback.url,
@@ -90,7 +67,7 @@ class StockVideoService {
       };
     } catch (error) {
       console.error('[StockVideoService] Error searching video:', error.message);
-      const fallback = this.getDeterministicFallbackVideo(topic || 'motivation');
+      const fallback = this.createProceduralFallbackVideo(topic || 'motivation');
       return {
         videoUrl: fallback.url,
         videoId: fallback.id,
@@ -105,8 +82,9 @@ class StockVideoService {
     const outputs = [];
     for (let i = 0; i < scenes.length; i++) {
       const scene = scenes[i];
-      const query = `${scene.visualPrompt || scene.text || ''} ${globalPrompt}`.trim();
-      const selected = await this.searchVideoForTopic(query || 'cinematic vertical background');
+      // Build a focused query from the scene's own visual prompt, not the full concatenated block
+      const sceneQuery = this.buildPexelsQuery(scene.visualPrompt || scene.text || globalPrompt);
+      const selected = await this.searchVideoForTopic(sceneQuery || 'technology lifestyle');
       outputs.push({
         ...selected,
         sceneIndex: i,
@@ -188,25 +166,84 @@ class StockVideoService {
   }
 
   /**
-   * Extract keywords from topic for better video matching
+   * Build a concise, focused Pexels search query from a long visual prompt.
+   * Strips boilerplate style guide text, takes the first meaningful sentence,
+   * and returns up to maxWords content keywords.
    */
-  extractKeywords(topic) {
-    const keywords = (topic || '')
-      .toLowerCase()
-      .split(' ')
-      .filter((word) => word.length > 3 && !['that', 'this', 'with', 'from', 'just', 'more', 'about'].includes(word))
-      .slice(0, 3);
+  buildPexelsQuery(prompt, maxWords = 5) {
+    if (!prompt) return 'lifestyle technology';
 
-    return keywords.length > 0 ? keywords : ['motivation'];
+    let cleaned = String(prompt)
+      // Strip the boilerplate style guide appended to all LLM scene prompts
+      .replace(/[.!]?\s*A sleek[,\s].*$/is, '')
+      .replace(/[.!]?\s*Style:\s.*$/is, '')
+      .replace(/[.!]?\s*Mood:\s.*$/is, '')
+      .replace(/\(\s*9[:/]16[^)]*\)/gi, '')
+      .replace(/ultra-high definition.*$/is, '')
+      .replace(/inspired by Apple.*$/is, '')
+      .trim();
+
+    // Take only the first sentence or clause
+    const firstSentence = (cleaned.split(/\.\s+|\.$/)[0] || cleaned).trim();
+
+    const stopWords = new Set([
+      'that', 'this', 'with', 'from', 'just', 'more', 'about', 'into', 'onto',
+      'over', 'under', 'then', 'when', 'where', 'which', 'while', 'their',
+      'there', 'these', 'those', 'they', 'them', 'have', 'will', 'been',
+      'each', 'much', 'such', 'some', 'your', 'very', 'also', 'back',
+      'after', 'being', 'both', 'through', 'showing', 'quick', 'previous',
+      // Video/camera direction words that don't help Pexels search
+      'shot', 'scene', 'camera', 'video', 'effect', 'transition', 'montage',
+      'tilts', 'zooms', 'pans', 'follows', 'close', 'wide', 'fisheye', 'lens',
+      'cinematic', 'vertical', 'sleek', 'screen', 'background', 'looking',
+    ]);
+
+    const words = firstSentence
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 3 && !stopWords.has(w))
+      .slice(0, maxWords);
+
+    return words.length >= 2 ? words.join(' ') : 'technology lifestyle';
   }
 
   /**
-   * Get random fallback video (always works, no API key needed)
+   * Extract keywords from topic for better video matching
+   * @deprecated Use buildPexelsQuery() for better results
    */
-  getDeterministicFallbackVideo(topic) {
-    const base = String(topic || 'fallback');
+  extractKeywords(topic) {
+    return this.buildPexelsQuery(topic, 3).split(' ');
+  }
+
+  createProceduralFallbackVideo(topic) {
+    const base = String(topic || 'fallback').trim() || 'fallback';
     const hash = [...base].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-    return this.fallbackVideos[hash % this.fallbackVideos.length];
+    const hue = hash % 360;
+    const filename = `procedural_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.mp4`;
+    const outputPath = path.join(this.stockDir, filename);
+    const color = `hsv(${hue}\,0.45\,0.22)`;
+
+    const result = spawnSync('ffmpeg', [
+      '-y',
+      '-f', 'lavfi',
+      '-i', `color=c=${color}:s=1080x1920:d=12:r=30`,
+      '-vf', 'fps=30,format=yuv420p',
+      '-c:v', 'libx264',
+      '-preset', 'veryfast',
+      '-crf', '22',
+      outputPath,
+    ], { encoding: 'utf8' });
+
+    if (result.status !== 0) {
+      throw new Error(result.stderr || 'Failed to generate procedural fallback video');
+    }
+
+    return {
+      title: `Procedural background for ${base}`,
+      url: outputPath,
+      id: path.basename(filename, '.mp4'),
+    };
   }
 
   /**
