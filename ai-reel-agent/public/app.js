@@ -13,9 +13,30 @@ function deriveTopicFromCaption(caption = '') {
   return text.length > 56 ? `${text.slice(0, 53)}...` : text;
 }
 
+function deriveTopicFromTitle(title = '') {
+  const text = String(title || '').replace(/\s+/g, ' ').trim();
+  if (!text) return 'YouTube Video';
+  return text.length > 56 ? `${text.slice(0, 53)}...` : text;
+}
+
+function getYouTubeVideoId(input) {
+  if (!input) return null;
+  const raw = String(input).trim();
+  const idLike = /^[A-Za-z0-9_-]{11}$/;
+  if (idLike.test(raw)) return raw;
+  const watchMatch = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+  if (watchMatch) return watchMatch[1];
+  const shortsMatch = raw.match(/\/shorts\/([A-Za-z0-9_-]{11})/);
+  if (shortsMatch) return shortsMatch[1];
+  const embedMatch = raw.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+  if (embedMatch) return embedMatch[1];
+  return null;
+}
+
 function getUnifiedHistoryRows() {
   const dbRows = (snapshot?.history || []).map((row) => ({
     ...row,
+    platform: row.youtube_video_id ? 'youtube' : (row.instagram_post_id ? 'instagram' : 'internal'),
     rowKey: `db_${row.id}`,
   }));
 
@@ -51,6 +72,7 @@ function getUnifiedHistoryRows() {
         comments,
         shares: 0,
         status: 'posted',
+        platform: 'instagram',
         generation_method: 'instagram-feed',
         posted_at: timestamp,
         created_at: timestamp,
@@ -59,7 +81,54 @@ function getUnifiedHistoryRows() {
       };
     });
 
-  return [...dbRows, ...instagramRows].sort((a, b) => {
+  const seenYoutubeIds = new Set(
+    dbRows
+      .map((row) => String(row.youtube_video_id || '').trim())
+      .filter(Boolean)
+  );
+
+  const youtubeRows = (snapshot?.youtube?.recentVideos || [])
+    .map((item, index) => {
+      const id = getYouTubeVideoId(item?.id) || getYouTubeVideoId(item?.snippet?.resourceId?.videoId);
+      if (!id || seenYoutubeIds.has(String(id))) return null;
+      const stats = item.statistics || {};
+      const views = Number(stats.viewCount || 0);
+      const likes = Number(stats.likeCount || 0);
+      const comments = Number(stats.commentCount || 0);
+      const engagementRate = views > 0
+        ? Number((((likes + comments) * 100) / views).toFixed(2))
+        : 0;
+
+      return {
+        id: -(500 + index + 1),
+        rowKey: `yt_${id}`,
+        date: item?.snippet?.publishedAt ? String(item.snippet.publishedAt).split('T')[0] : null,
+        topic: deriveTopicFromTitle(item?.snippet?.title),
+        script: item?.snippet?.description || '--',
+        video_id: null,
+        instagram_post_id: null,
+        permalink: `https://www.youtube.com/watch?v=${id}`,
+        youtube_video_id: id,
+        youtube_url: `https://www.youtube.com/watch?v=${id}`,
+        youtube_views: views,
+        youtube_likes: likes,
+        youtube_comments: comments,
+        views,
+        likes,
+        comments,
+        shares: 0,
+        status: 'posted',
+        platform: 'youtube',
+        generation_method: 'youtube-feed',
+        posted_at: item?.snippet?.publishedAt || null,
+        created_at: item?.snippet?.publishedAt || null,
+        updated_at: item?.snippet?.publishedAt || null,
+        engagement_rate: engagementRate,
+      };
+    })
+    .filter(Boolean);
+
+  return [...dbRows, ...instagramRows, ...youtubeRows].sort((a, b) => {
     const aTime = new Date(a.posted_at || a.updated_at || a.date || 0).getTime();
     const bTime = new Date(b.posted_at || b.updated_at || b.date || 0).getTime();
     return bTime - aTime;
@@ -107,6 +176,7 @@ function updateUI(data) {
   updateTrendingTopics(data.insights?.topTopics || data.trendingTopics || []);
   updateMethodChart(data.insights?.methodSplit || []);
   updateRecommendations(data.recommendations || null);
+  updateYouTubeWall(data.youtube?.recentVideos || [], data.history || []);
 }
 
 function hourTo12h(hourStr) {
@@ -193,6 +263,7 @@ function updateAPIUsage(apiUsage) {
   updateAPIBar('gemini', apiUsage.gemini);
   updateAPIBar('heygen', apiUsage.heygen);
   updateAPIBar('instagram', apiUsage.instagram);
+  updateAPIBar('youtube', apiUsage.youtube);
 }
 
 function updateAPIBar(service, data = {}) {
@@ -213,6 +284,58 @@ function updateAPIBar(service, data = {}) {
   if (percentUsed >= 80) statusEl.classList.add('danger');
   else if (percentUsed >= 60) statusEl.classList.add('warning');
   else statusEl.classList.add('healthy');
+}
+
+function updateYouTubeWall(youtubeVideos = [], historyRows = []) {
+  const container = document.getElementById('youtube-wall');
+  if (!container) return;
+
+  const fromYoutube = (youtubeVideos || [])
+    .map((item) => {
+      const id = getYouTubeVideoId(item?.id) || getYouTubeVideoId(item?.snippet?.resourceId?.videoId);
+      if (!id) return null;
+      return {
+        id,
+        title: item?.snippet?.title || 'YouTube Video',
+        views: Number(item?.statistics?.viewCount || 0),
+        likes: Number(item?.statistics?.likeCount || 0),
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 8);
+
+  const rows = fromYoutube.length
+    ? fromYoutube
+    : (historyRows || [])
+      .filter((row) => row?.youtube_video_id)
+      .map((row) => ({
+        id: row.youtube_video_id,
+        title: row.topic || 'YouTube Video',
+        views: Number(row.youtube_views || 0),
+        likes: Number(row.youtube_likes || 0),
+      }))
+      .slice(0, 8);
+
+  if (!rows.length) {
+    container.innerHTML = '<p class="loading">No YouTube videos in snapshot yet.</p>';
+    return;
+  }
+
+  container.innerHTML = rows.map((row) => `
+    <article class="youtube-item">
+      <div class="youtube-frame-wrap">
+        <iframe src="https://www.youtube.com/embed/${row.id}?rel=0" title="${escapeHtml(row.title)}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+      <div class="youtube-meta">
+        <p>${escapeHtml(row.title)}</p>
+        <div class="youtube-stats">
+          <span>👁 ${formatNumber(row.views || 0)}</span>
+          <span>👍 ${formatNumber(row.likes || 0)}</span>
+        </div>
+        <a href="https://www.youtube.com/watch?v=${row.id}" target="_blank" rel="noopener">Watch ↗</a>
+      </div>
+    </article>
+  `).join('');
 }
 
 function updateStatistics(stats = {}, insights = {}) {
@@ -370,9 +493,12 @@ function loadHistory() {
   } else {
     body.innerHTML = rows.map((row) => {
       const permalink = row.permalink || (row.instagram_post_id ? `https://www.instagram.com/reel/${instagramShortcode(row.instagram_post_id) || ''}/` : null);
-      const link = permalink
-        ? `<a href="${permalink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View on Instagram">↗ View</a>`
-        : '--';
+      const youtubeLink = row.youtube_url || (row.youtube_video_id ? `https://www.youtube.com/watch?v=${row.youtube_video_id}` : null);
+      const links = [
+        permalink ? `<a href="${permalink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View on Instagram">IG ↗</a>` : null,
+        youtubeLink ? `<a href="${youtubeLink}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="View on YouTube">YT ↗</a>` : null,
+      ].filter(Boolean).join(' • ');
+      const link = links || '--';
       return `
         <tr onclick="showPostDetailByKey('${row.rowKey}')">
           <td>${formatDate(row.date)}</td>
@@ -415,6 +541,10 @@ function showPostDetailByKey(rowKey) {
   const instagramBlock = permalink
     ? `<p><strong>Instagram:</strong> <a href="${permalink}" target="_blank" rel="noopener">View Reel ↗</a></p>`
     : `<p><strong>Instagram Post ID:</strong> ${escapeHtml(post.instagram_post_id || '--')}</p>`;
+  const youtubeUrl = post.youtube_url || (post.youtube_video_id ? `https://www.youtube.com/watch?v=${post.youtube_video_id}` : null);
+  const youtubeBlock = youtubeUrl
+    ? `<p><strong>YouTube:</strong> <a href="${youtubeUrl}" target="_blank" rel="noopener">View Video ↗</a></p>`
+    : `<p><strong>YouTube Video ID:</strong> ${escapeHtml(post.youtube_video_id || '--')}</p>`;
 
   detail.innerHTML = `
     <h3>${escapeHtml(post.topic || 'Untitled')}</h3>
@@ -422,6 +552,7 @@ function showPostDetailByKey(rowKey) {
     <p><strong>Status:</strong> ${(post.status || 'pending').toUpperCase()}</p>
     <p><strong>Method:</strong> ${escapeHtml(post.generation_method || '--')}</p>
     ${instagramBlock}
+    ${youtubeBlock}
     <p><strong>Reach:</strong> ${formatNumber(post.views || 0)} | <strong>Likes:</strong> ${formatNumber(post.likes || 0)}</p>
     <p><strong>Comments:</strong> ${formatNumber(post.comments || 0)} | <strong>Shares:</strong> ${formatNumber(post.shares || 0)}</p>
     <p><strong>Engagement:</strong> ${Number(post.engagement_rate || 0).toFixed(2)}%</p>

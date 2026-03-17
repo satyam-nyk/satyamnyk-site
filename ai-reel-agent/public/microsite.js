@@ -4,6 +4,7 @@ function fmt(n) {
 }
 
 const DEFAULT_INSTAGRAM_PAGE_URL = 'https://www.instagram.com/globaldailydose/';
+const DEFAULT_YOUTUBE_CHANNEL_URL = 'https://www.youtube.com/';
 
 function fmtDate(date) {
   if (!date) return '--';
@@ -99,6 +100,132 @@ function updateInstagramBadge(pageUrl) {
   enableLink(pageLinkSecondaryEl, pageUrl);
   enableLink(navIgLinkEl, pageUrl);
   enableLink(menuIgLinkEl, pageUrl);
+}
+
+function updateYouTubeBadge(channelUrl, channelTitle) {
+  const labelEl = document.getElementById('yt-channel-label');
+  const copyEl = document.getElementById('yt-channel-copy');
+  const linkEl = document.getElementById('yt-channel-link');
+  const linkSecondaryEl = document.getElementById('yt-channel-link-secondary');
+  const navYtLinkEl = document.getElementById('nav-yt-link');
+  const menuYtLinkEl = document.getElementById('menu-yt-link');
+  if (!labelEl || !copyEl || !linkEl) return;
+
+  const disableLink = (el) => {
+    if (!el) return;
+    el.href = '#';
+    el.setAttribute('aria-disabled', 'true');
+  };
+
+  const enableLink = (el, url) => {
+    if (!el) return;
+    el.href = url;
+    el.removeAttribute('aria-disabled');
+  };
+
+  if (!channelUrl) {
+    labelEl.textContent = 'Connect your YouTube channel';
+    copyEl.textContent = 'Enable YouTube in your pipeline to show your real channel link here.';
+    disableLink(linkEl);
+    disableLink(linkSecondaryEl);
+    disableLink(navYtLinkEl);
+    disableLink(menuYtLinkEl);
+    return;
+  }
+
+  labelEl.textContent = channelTitle || channelUrl.replace(/^https?:\/\/www\./i, '').replace(/\/$/, '');
+  copyEl.textContent = 'Latest Shorts and long-form uploads from your connected YouTube channel.';
+  enableLink(linkEl, channelUrl);
+  enableLink(linkSecondaryEl, channelUrl);
+  enableLink(navYtLinkEl, channelUrl);
+  enableLink(menuYtLinkEl, channelUrl);
+}
+
+function getYouTubeVideoId(input) {
+  if (!input) return null;
+  const raw = String(input).trim();
+  const idLike = /^[A-Za-z0-9_-]{11}$/;
+  if (idLike.test(raw)) return raw;
+  const watchMatch = raw.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+  if (watchMatch) return watchMatch[1];
+  const shortsMatch = raw.match(/\/shorts\/([A-Za-z0-9_-]{11})/);
+  if (shortsMatch) return shortsMatch[1];
+  const embedMatch = raw.match(/\/embed\/([A-Za-z0-9_-]{11})/);
+  if (embedMatch) return embedMatch[1];
+  return null;
+}
+
+function updateYouTubeEmbeds(historyRows = [], youtubeVideos = []) {
+  const gridEl = document.getElementById('yt-embeds-grid');
+  if (!gridEl) return;
+
+  const fromYoutube = (youtubeVideos || [])
+    .map((item) => {
+      const videoId = getYouTubeVideoId(item?.id) || getYouTubeVideoId(item?.snippet?.resourceId?.videoId);
+      if (!videoId) return null;
+      return {
+        videoId,
+        title: item?.snippet?.title || 'YouTube Short',
+        views: Number(item?.statistics?.viewCount || 0),
+        likes: Number(item?.statistics?.likeCount || 0),
+        comments: Number(item?.statistics?.commentCount || 0),
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 8);
+
+  if (!fromYoutube.length) {
+    const fallback = (historyRows || [])
+      .filter((row) => row?.youtube_video_id)
+      .map((row) => ({
+        videoId: row.youtube_video_id,
+        title: row.topic || 'YouTube video',
+        views: Number(row.youtube_views || 0),
+        likes: Number(row.youtube_likes || 0),
+        comments: Number(row.youtube_comments || 0),
+      }))
+      .slice(0, 8);
+
+    if (!fallback.length) {
+      gridEl.innerHTML = '<p class="note">No published YouTube videos yet — enable YouTube posting to populate this wall.</p>';
+      return;
+    }
+
+    gridEl.innerHTML = fallback.map((row) => `
+      <article class="ig-embed-item yt-embed-item">
+        <div class="yt-frame-wrap">
+          <iframe src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+        <div class="ig-card-body">
+          <p class="ig-card-caption">${row.title}</p>
+          <div class="ig-card-meta">
+            <span>👁 ${fmt(row.views)}</span>
+            <span>👍 ${fmt(row.likes)}</span>
+            <span>💬 ${fmt(row.comments)}</span>
+          </div>
+          <a class="ig-card-link" href="https://www.youtube.com/watch?v=${row.videoId}" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+        </div>
+      </article>
+    `).join('');
+    return;
+  }
+
+  gridEl.innerHTML = fromYoutube.map((row) => `
+    <article class="ig-embed-item yt-embed-item">
+      <div class="yt-frame-wrap">
+        <iframe src="https://www.youtube.com/embed/${row.videoId}?rel=0" title="${row.title.replace(/"/g, '&quot;')}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+      <div class="ig-card-body">
+        <p class="ig-card-caption">${row.title}</p>
+        <div class="ig-card-meta">
+          <span>👁 ${fmt(row.views)}</span>
+          <span>👍 ${fmt(row.likes)}</span>
+          <span>💬 ${fmt(row.comments)}</span>
+        </div>
+        <a class="ig-card-link" href="https://www.youtube.com/watch?v=${row.videoId}" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a>
+      </div>
+    </article>
+  `).join('');
 }
 
 function updateEmbeddedReels(historyRows = [], instagramMedia = []) {
@@ -230,6 +357,7 @@ async function loadPublicStats() {
 
   // Keep CTA available on first paint even if stats fetch is slow/fails.
   updateInstagramBadge(DEFAULT_INSTAGRAM_PAGE_URL);
+  updateYouTubeBadge(DEFAULT_YOUTUBE_CHANNEL_URL, null);
 
   try {
     const [data, publicConfig] = await Promise.all([
@@ -252,6 +380,14 @@ async function loadPublicStats() {
     const pageUrl = publicConfig?.instagramPageUrl || data.instagramPageUrl || DEFAULT_INSTAGRAM_PAGE_URL;
     updateInstagramBadge(pageUrl);
     updateEmbeddedReels(data.history || [], data.instagram?.recentMedia || []);
+
+    const channel = data.youtube?.channel || null;
+    const channelId = channel?.id || null;
+    const channelUrl = channel?.snippet?.customUrl
+      ? `https://www.youtube.com/${String(channel.snippet.customUrl).replace(/^@/, '@')}`
+      : (channelId ? `https://www.youtube.com/channel/${channelId}` : DEFAULT_YOUTUBE_CHANNEL_URL);
+    updateYouTubeBadge(channelUrl, channel?.snippet?.title || null);
+    updateYouTubeEmbeds(data.history || [], data.youtube?.recentVideos || []);
   } catch (e) {
     console.error('public stats error', e);
     postEl.textContent = '--';
@@ -260,6 +396,8 @@ async function loadPublicStats() {
     methodEl.textContent = '--';
     updateInstagramBadge(DEFAULT_INSTAGRAM_PAGE_URL);
     updateEmbeddedReels([], []);
+    updateYouTubeBadge(DEFAULT_YOUTUBE_CHANNEL_URL, null);
+    updateYouTubeEmbeds([], []);
   }
 }
 

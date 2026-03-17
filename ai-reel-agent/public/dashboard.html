@@ -112,6 +112,16 @@
                             <span class="status-light" id="instagram-status">●</span>
                         </div>
                     </div>
+                    <div class="api-item">
+                        <h4>YouTube API</h4>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="youtube-progress" style="width: 0%"></div>
+                        </div>
+                        <div class="api-info">
+                            <span id="youtube-used">0</span>/<span id="youtube-limit">10000</span>
+                            <span class="status-light" id="youtube-status">●</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -186,6 +196,17 @@
                 </div>
                 <div class="card-content">
                     <canvas id="methodChart"></canvas>
+                </div>
+            </section>
+
+            <section class="card card-large">
+                <div class="card-header">
+                    <h2>▶️ YouTube Shorts Wall</h2>
+                </div>
+                <div class="card-content">
+                    <div id="youtube-wall" class="youtube-wall">
+                        <p class="loading">Loading YouTube videos...</p>
+                    </div>
                 </div>
             </section>
 
