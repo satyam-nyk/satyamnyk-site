@@ -36,11 +36,59 @@ class Database {
             reject(err);
             return;
           }
-          console.log('Database schema initialized');
-          resolve();
+          this.ensureMigrations()
+            .then(() => {
+              console.log('Database schema initialized');
+              resolve();
+            })
+            .catch((migrationErr) => {
+              console.error('Database migration error:', migrationErr);
+              reject(migrationErr);
+            });
         });
       });
     });
+  }
+
+  async ensureMigrations() {
+    await this.ensureColumns('daily_posts', {
+      youtube_video_id: 'TEXT',
+      youtube_url: 'TEXT',
+      youtube_views: 'INTEGER DEFAULT 0',
+      youtube_likes: 'INTEGER DEFAULT 0',
+      youtube_comments: 'INTEGER DEFAULT 0',
+    });
+  }
+
+  async ensureColumns(tableName, columns) {
+    const existing = await new Promise((resolve, reject) => {
+      this.db.all(`PRAGMA table_info(${tableName})`, (err, rows) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(new Set((rows || []).map((row) => row.name)));
+      });
+    });
+
+    for (const [columnName, definition] of Object.entries(columns)) {
+      if (existing.has(columnName)) {
+        continue;
+      }
+
+      await new Promise((resolve, reject) => {
+        this.db.run(
+          `ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`,
+          (err) => {
+            if (err) {
+              reject(err);
+              return;
+            }
+            resolve();
+          }
+        );
+      });
+    }
   }
 
   /**
@@ -395,6 +443,27 @@ class Database {
   }
 
   /**
+   * Update post with YouTube data
+   */
+  async updatePostWithYouTube(date, youtubeVideoId, youtubeUrl) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        UPDATE daily_posts
+        SET youtube_video_id = ?, youtube_url = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE date = ?
+      `;
+      this.db.run(query, [youtubeVideoId, youtubeUrl, date], (err) => {
+        if (err) {
+          console.error('Error updating post with YouTube data:', err);
+          reject(err);
+          return;
+        }
+        resolve({ date, youtubeVideoId, youtubeUrl });
+      });
+    });
+  }
+
+  /**
    * Update post analytics
    */
   async updatePostAnalytics(instagramPostId, views, likes, comments, shares) {
@@ -411,6 +480,24 @@ class Database {
           return;
         }
         resolve({ instagramPostId, views, likes, comments, shares });
+      });
+    });
+  }
+
+  async updatePostYouTubeAnalytics(youtubeVideoId, views, likes, comments) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        UPDATE daily_posts
+        SET youtube_views = ?, youtube_likes = ?, youtube_comments = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE youtube_video_id = ?
+      `;
+      this.db.run(query, [views, likes, comments, youtubeVideoId], (err) => {
+        if (err) {
+          console.error('Error updating YouTube analytics:', err);
+          reject(err);
+          return;
+        }
+        resolve({ youtubeVideoId, views, likes, comments });
       });
     });
   }
@@ -514,6 +601,11 @@ class Database {
           script,
           video_id,
           instagram_post_id,
+          youtube_video_id,
+          youtube_url,
+          youtube_views,
+          youtube_likes,
+          youtube_comments,
           views,
           likes,
           comments,
@@ -581,6 +673,11 @@ class Database {
           script,
           video_id,
           instagram_post_id,
+          youtube_video_id,
+          youtube_url,
+          youtube_views,
+          youtube_likes,
+          youtube_comments,
           views,
           likes,
           comments,

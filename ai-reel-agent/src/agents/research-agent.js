@@ -136,6 +136,52 @@ class ResearchAgent {
     }
   }
 
+  async researchTopicByTheme(themeName) {
+    try {
+      const safeTheme = String(themeName || '').trim();
+      const currentYear = new Date().getUTCFullYear();
+      if (!safeTheme) {
+        throw new Error('Theme is required');
+      }
+
+      let topic = null;
+      if (this.llmService?.generateThemedTopic) {
+        topic = await this.llmService.generateThemedTopic(safeTheme);
+      }
+
+      if (!topic) {
+        topic = {
+          topic: `${safeTheme} - ${currentYear} latest update`,
+          description: `Fresh ${safeTheme.toLowerCase()} brief with current relevance and practical impact.`,
+          hook: `आज का ${safeTheme.toLowerCase()} अपडेट`,
+          keywords: [safeTheme, 'daily update', 'hindi'],
+        };
+      }
+
+      // Guard against stale topic years being treated as current news.
+      const topicText = String(topic.topic || '');
+      const yearMatch = topicText.match(/\b(20\d{2})\b/);
+      if (yearMatch) {
+        const year = Number(yearMatch[1]);
+        if (Number.isFinite(year) && year < currentYear - 1) {
+          topic = {
+            ...topic,
+            topic: `${safeTheme} - ${currentYear} latest verified update`,
+            description: `Current, factual ${safeTheme.toLowerCase()} explainer focused on what changed now and why it matters.`,
+            hook: `आज का लेटेस्ट ${safeTheme.toLowerCase()} अपडेट`,
+            keywords: [safeTheme, String(currentYear), 'latest', 'verified'],
+          };
+        }
+      }
+
+      topic.source = topic.source || 'llm';
+      return topic;
+    } catch (error) {
+      console.error('[ResearchAgent] Error in themed topic research:', error.message);
+      throw error;
+    }
+  }
+
   /**
    * Get cached topic when API limit is reached
    * Returns: {topic, description, keywords}

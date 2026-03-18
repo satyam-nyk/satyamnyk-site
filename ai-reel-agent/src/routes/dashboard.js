@@ -108,6 +108,12 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
             limit: apiStatus.instagram?.limit || 200,
             status: apiStatus.instagram?.status || 'unknown',
           },
+          youtube: {
+            used: apiStatus.youtube?.used || 0,
+            remaining: apiStatus.youtube?.remaining || 0,
+            limit: apiStatus.youtube?.limit || 10000,
+            status: apiStatus.youtube?.status || 'unknown',
+          },
         },
         queue: {
           total: scriptQueueStats.total || 0,
@@ -134,6 +140,16 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
         insights,
         recommendations,
         staticPost: latestStaticPost,
+        youtube: {
+          enabled: String(process.env.YOUTUBE_ENABLED || 'false').toLowerCase() === 'true',
+          currentPost: todayPost ? {
+            videoId: todayPost.youtube_video_id || null,
+            url: todayPost.youtube_url || null,
+            views: todayPost.youtube_views || 0,
+            likes: todayPost.youtube_likes || 0,
+            comments: todayPost.youtube_comments || 0,
+          } : null,
+        },
       });
     } catch (error) {
       console.error('[Dashboard] Error retrieving dashboard data:', error.message);
@@ -287,6 +303,15 @@ export function createDashboardRouter(database, apiLimiter, researchAgent, scrip
               ? Math.round(((status.instagram?.used || 0) / status.instagram?.limit) * 100)
               : 0,
             status: status.instagram?.status || 'unknown',
+          },
+          youtube: {
+            used: status.youtube?.used || 0,
+            remaining: status.youtube?.remaining || 0,
+            limit: status.youtube?.limit || 10000,
+            percentUsed: status.youtube?.limit
+              ? Math.round(((status.youtube?.used || 0) / status.youtube.limit) * 100)
+              : 0,
+            status: status.youtube?.status || 'unknown',
           },
         },
       });

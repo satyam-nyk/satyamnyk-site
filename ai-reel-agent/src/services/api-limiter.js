@@ -201,6 +201,7 @@ class APILimiter {
       const gemini = await this.checkLimit('GEMINI');
       const heygen = await this.getRemainingForMonth('HEYGEN');
       const instagram = await this.checkLimit('INSTAGRAM');
+      const youtube = await this.checkLimit('YOUTUBE');
 
       return {
         mistral: {
@@ -218,6 +219,10 @@ class APILimiter {
         instagram: {
           ...instagram,
           status: instagram.available ? 'healthy' : 'warning',
+        },
+        youtube: {
+          ...youtube,
+          status: youtube.available ? 'healthy' : 'warning',
         },
         timestamp: new Date().toISOString(),
       };

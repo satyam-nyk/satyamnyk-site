@@ -14,6 +14,7 @@ class VideoAgent {
     this.ttsService = ttsService;
     this.compositionService = compositionService;
     this.preferredGenerator = process.env.PREFERRED_VIDEO_GENERATOR || 'stock';
+    this.reuseEnabled = String(process.env.VIDEO_REUSE_ENABLED || 'false').toLowerCase() === 'true';
     
     console.log('[VideoAgent] Initialized with smart hybrid generation');
     console.log(`[VideoAgent] Priority mode: ${this.preferredGenerator}`);
@@ -55,9 +56,11 @@ class VideoAgent {
       }
 
       // STRATEGY 3: Fall back to cache
-      console.log('[VideoAgent] ⚠️  Tier 3: Attempting cache fallback');
-      result = await this.reuseOldVideo();
-      if (result) return result;
+      if (this.reuseEnabled) {
+        console.log('[VideoAgent] ⚠️  Tier 3: Attempting cache fallback');
+        result = await this.reuseOldVideo();
+        if (result) return result;
+      }
 
       throw new Error('All video generation methods exhausted');
     } catch (error) {

@@ -22,6 +22,10 @@ export const API_LIMITS = {
     RATE_LIMIT: 200, // requests per hour
     TIMEOUT: 30000, // 30 seconds
   },
+  YOUTUBE: {
+    DAILY_LIMIT: 10000, // quota units/day on YouTube Data API
+    TIMEOUT: 120000, // uploads and media endpoints can be slower
+  },
 };
 
 // Video Configuration
@@ -145,7 +149,7 @@ export const FEATURES = {
 
 // Timing Configuration (in hours UTC)
 export const TIMING = {
-  DAILY_POST_TIMES: [8], // 8 AM UTC
+  DAILY_POST_TIMES: [0, 6, 12, 18], // every 6 hours UTC
   BATCH_PROCESSING_DAY: 0, // Sunday (0)
   BATCH_PROCESSING_TIME: 0, // Midnight UTC
   ANALYTICS_UPDATE_INTERVAL: 6, // Every 6 hours

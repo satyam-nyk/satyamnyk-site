@@ -11,6 +11,7 @@ import APILimiter from './services/api-limiter.js';
 import LLMService from './services/gemini-service.js';
 import HeyGenService from './services/heygen-service.js';
 import InstagramService from './services/instagram-service.js';
+import YouTubeService from './services/youtube-service.js';
 import StockVideoService from './services/stock-video-service.js';
 import TTSService from './services/tts-service.js';
 import VideoCompositionService from './services/video-composition-service.js';
@@ -50,6 +51,7 @@ let apiLimiter = null;
 let llmService = null;
 let heygenService = null;
 let instagramService = null;
+let youtubeService = null;
 let stockVideoService = null;
 let ttsService = null;
 let compositionService = null;
@@ -67,13 +69,13 @@ function getDailySchedulerHours() {
 
   const fallback = Array.isArray(TIMING.DAILY_POST_TIMES)
     ? TIMING.DAILY_POST_TIMES
-    : [8, 20];
+    : [0, 6, 12, 18];
 
   const hours = (source.length ? source : fallback)
     .map((v) => Number(v))
     .filter((v) => Number.isInteger(v) && v >= 0 && v <= 23);
 
-  if (!hours.length) return [8, 20];
+  if (!hours.length) return [0, 6, 12, 18];
   return [...new Set(hours)].sort((a, b) => a - b);
 }
 
@@ -121,6 +123,12 @@ async function initializeServices() {
       apiLimiter
     );
 
+    const youtubeEnabled = String(process.env.YOUTUBE_ENABLED || 'false').toLowerCase() === 'true';
+    if (youtubeEnabled) {
+      console.log('[Server] Initializing YouTube service...');
+      youtubeService = new YouTubeService({ apiLimiter });
+    }
+
     // 6. Initialize Agents
     console.log('[Server] Initializing agents...');
     researchAgent = new ResearchAgent(llmService, database, apiLimiter);
@@ -162,7 +170,8 @@ function setupRoutes() {
     researchAgent,
     scriptAgent,
     videoAgent,
-    instagramService
+    instagramService,
+    youtubeService
   );
   app.use('/api/webhook', webhookRouter);
 
@@ -279,12 +288,15 @@ function scheduleNextDailyRun() {
   const now = new Date();
   const hours = getDailySchedulerHours();
   let nextRun = null;
+  let nextSlotIndex = 0;
 
-  for (const hour of hours) {
+  for (let i = 0; i < hours.length; i += 1) {
+    const hour = hours[i];
     const candidate = new Date(now);
     candidate.setUTCHours(hour, 0, 0, 0);
     if (candidate > now) {
       nextRun = candidate;
+      nextSlotIndex = i;
       break;
     }
   }
@@ -293,11 +305,12 @@ function scheduleNextDailyRun() {
     nextRun = new Date(now);
     nextRun.setUTCDate(nextRun.getUTCDate() + 1);
     nextRun.setUTCHours(hours[0], 0, 0, 0);
+    nextSlotIndex = 0;
   }
 
   const delay = nextRun.getTime() - now.getTime();
   console.log(`[Server] Auto scheduler hours (UTC): ${hours.join(', ')}`);
-  console.log(`[Server] Next reel scheduler run at ${nextRun.toISOString()}`);
+  console.log(`[Server] Next reel scheduler run at ${nextRun.toISOString()} (slot ${nextSlotIndex})`);
 
   clearTimeout(dailySchedulerTimeout);
   dailySchedulerTimeout = setTimeout(async () => {
@@ -307,7 +320,7 @@ function scheduleNextDailyRun() {
         headers.Authorization = `Bearer ${process.env.WEBHOOK_SECRET}`;
       }
 
-      const response = await fetch(`http://127.0.0.1:${PORT}/api/webhook/generate-daily-reel`, {
+      const response = await fetch(`http://127.0.0.1:${PORT}/api/webhook/generate-themed-reel?slot=${nextSlotIndex}`, {
         method: 'POST',
         headers,
       });
