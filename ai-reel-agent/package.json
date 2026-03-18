@@ -8,7 +8,16 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node scripts/migrate.js",
-    "dashboard:refresh": "node scripts/refresh-dashboard.js"
+    "dashboard:refresh": "node scripts/refresh-dashboard.js",
+    "youtube:auth": "node scripts/youtube-auth.js",
+    "youtube:verify": "node scripts/youtube-verify.js",
+    "pm2:start": "pm2 start ecosystem.config.cjs --only ai-reel-agent",
+    "pm2:restart": "pm2 restart ai-reel-agent",
+    "pm2:stop": "pm2 stop ai-reel-agent",
+    "pm2:delete": "pm2 delete ai-reel-agent",
+    "pm2:status": "pm2 status ai-reel-agent",
+    "pm2:logs": "pm2 logs ai-reel-agent --lines 150",
+    "pm2:save": "pm2 save"
   },
   "keywords": [
     "ai",
@@ -22,12 +31,13 @@
   "author": "satyam-nyk",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "dotenv": "^16.3.1",
     "axios": "^1.6.2",
-    "sqlite3": "^5.1.6",
+    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
-    "body-parser": "^1.20.2"
+    "dotenv": "^16.3.1",
+    "edge-tts": "^1.0.1",
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
