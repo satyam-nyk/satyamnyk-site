@@ -14,10 +14,11 @@ class TTSService {
     this.timeout = API_LIMITS.TTS?.TIMEOUT || 15000;
     this.provider = process.env.TTS_PROVIDER || 'auto';
     this.coquiModel = process.env.COQUI_TTS_MODEL || 'tts_models/en/ljspeech/tacotron2-DDC';
-    this.voice = process.env.EDGE_TTS_VOICE || 'en-US-EmmaMultilingualNeural';
-    this.rate = process.env.EDGE_TTS_RATE || '+2%';
-    this.pitch = process.env.EDGE_TTS_PITCH || '-8Hz';
-    this.volume = process.env.EDGE_TTS_VOLUME || '+0%';
+    this.voice = process.env.EDGE_TTS_VOICE || 'en-US-AvaMultilingualNeural';
+    this.hinglishVoice = process.env.EDGE_TTS_HINGLISH_VOICE || 'hi-IN-SwaraNeural';
+    this.rate = process.env.EDGE_TTS_RATE || '+0%';
+    this.pitch = process.env.EDGE_TTS_PITCH || '+0Hz';
+    this.volume = process.env.EDGE_TTS_VOLUME || '+2%';
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
@@ -36,6 +37,7 @@ class TTSService {
       console.log('[TTSService] Generating audio for script (length:', script.length, ')');
 
       const audioScript = this.humanizeScript(script).substring(0, 3500);
+      const selectedVoice = this.selectVoiceForText(audioScript, voiceId);
 
       if (!audioScript) {
         throw new Error('Script is empty after cleanup');
@@ -50,11 +52,13 @@ class TTSService {
           throw new Error('Coqui TTS selected but unavailable');
         }
         if (!coquiSuccess) {
-          await this.runEdgeTts(audioScript, audioPath, this.resolveVoice(voiceId));
+          await this.runEdgeTts(audioScript, audioPath, selectedVoice);
         }
       } else {
-        await this.runEdgeTts(audioScript, audioPath, this.resolveVoice(voiceId));
+        await this.runEdgeTts(audioScript, audioPath, selectedVoice);
       }
+
+      await this.normalizeAudioForSpeech(audioPath);
 
       const measuredDuration = await this.probeDuration(audioPath);
       const duration = measuredDuration > 0 ? measuredDuration : this.estimateDuration(audioScript);
@@ -64,7 +68,7 @@ class TTSService {
         scriptText: audioScript,
         duration,
         format: 'mp3',
-        voiceId: voiceId,
+        voiceId: selectedVoice,
         source: this.provider === 'coqui' ? 'coqui-tts' : 'edge-tts',
       };
     } catch (error) {
@@ -86,11 +90,11 @@ class TTSService {
       return this.generateAudio('', voiceId);
     }
 
-    const voice = this.resolveVoice(voiceId);
     const sceneOutputs = [];
 
     for (let i = 0; i < scenes.length; i++) {
       const text = this.humanizeScript(scenes[i]?.text || '').slice(0, 320);
+      const voice = this.selectVoiceForText(text, voiceId);
       if (!text) continue;
       const scenePath = path.join(this.audioDir, `scene_tts_${Date.now()}_${i}.mp3`);
 
@@ -105,6 +109,8 @@ class TTSService {
       } else {
         await this.runEdgeTts(text, scenePath, voice);
       }
+
+      await this.normalizeAudioForSpeech(scenePath);
 
       const duration = await this.probeDuration(scenePath);
       sceneOutputs.push({ audioPath: scenePath, duration: duration || this.estimateDuration(text), text });
@@ -251,6 +257,7 @@ class TTSService {
       default: this.voice,
       warm: 'en-US-AvaMultilingualNeural',
       male: 'en-US-AndrewMultilingualNeural',
+      hinglish: this.hinglishVoice,
     };
 
     return voiceMap[voiceId] || voiceId || this.voice;
@@ -259,6 +266,10 @@ class TTSService {
   humanizeScript(script) {
     return String(script || '')
       .replace(/[#*_`]/g, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/#[\w]+/g, '')
+      .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
       .replace(/\s+/g, ' ')
       .replace(/\bAI\b/g, 'A I')
       .replace(/\bUSA\b/g, 'U S A')
@@ -267,6 +278,64 @@ class TTSService {
       .replace(/\s*([,.!?;:])\s*/g, '$1 ')
       .replace(/\.{2,}/g, '.')
       .trim();
+  }
+
+  selectVoiceForText(text, voiceId = 'default') {
+    const explicitVoice = this.resolveVoice(voiceId);
+    if (voiceId && voiceId !== 'default') {
+      return explicitVoice;
+    }
+
+    const sample = String(text || '').toLowerCase();
+    const hasDevanagari = /[\u0900-\u097F]/.test(sample);
+    const hinglishMarkers = /\b(aaj|kal|kya|kyun|kyu|kaise|dekho|samjho|dosto|yaar|bharat|sarkar|rajniti|tech|itihas)\b/;
+    if (hasDevanagari || hinglishMarkers.test(sample)) {
+      return this.hinglishVoice;
+    }
+
+    return explicitVoice;
+  }
+
+  async normalizeAudioForSpeech(filePath) {
+    if (!filePath || !fs.existsSync(filePath)) {
+      return;
+    }
+
+    const normalizedPath = `${filePath}.norm.mp3`;
+    try {
+      await new Promise((resolve, reject) => {
+        const proc = spawn('ffmpeg', [
+          '-y',
+          '-i', filePath,
+          '-af', 'highpass=f=70,lowpass=f=9000,loudnorm=I=-16:TP=-1.5:LRA=11',
+          '-ar', '48000',
+          '-ac', '2',
+          '-c:a', 'libmp3lame',
+          '-b:a', '192k',
+          normalizedPath,
+        ], { stdio: ['ignore', 'pipe', 'pipe'] });
+
+        let stderr = '';
+        proc.stderr.on('data', (buf) => {
+          stderr += buf.toString();
+        });
+        proc.on('error', reject);
+        proc.on('close', (code) => {
+          if (code === 0) {
+            resolve();
+            return;
+          }
+          reject(new Error(stderr || `ffmpeg normalize failed with code ${code}`));
+        });
+      });
+
+      fs.renameSync(normalizedPath, filePath);
+    } catch (error) {
+      if (fs.existsSync(normalizedPath)) {
+        fs.unlinkSync(normalizedPath);
+      }
+      console.warn('[TTSService] Audio normalization skipped:', error.message);
+    }
   }
 
   async runEdgeTts(text, audioPath, voice) {

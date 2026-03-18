@@ -44,11 +44,11 @@ class VideoCompositionService {
       const inputVideo = videoSource.url;
       const audioPath = audioPart?.audioPath;
 
-      let targetDuration = Math.max(30, Math.min(120, Math.ceil(audioPart?.duration || videoSource.duration || 90)));
+      let targetDuration = Math.max(60, Math.min(120, Math.ceil(audioPart?.duration || videoSource.duration || 90)));
       if (audioPath && fs.existsSync(audioPath)) {
         const actualAudioDuration = await this.probeDuration(audioPath);
         if (actualAudioDuration > 0) {
-          targetDuration = Math.max(30, Math.min(120, Math.ceil(actualAudioDuration)));
+          targetDuration = Math.max(60, Math.min(120, Math.ceil(actualAudioDuration)));
         }
       }
 
@@ -60,7 +60,7 @@ class VideoCompositionService {
       await this.createBadgeImage(badgeImagePath);
 
       if (Array.isArray(videoSources) && videoSources.length > 0 && Array.isArray(scenes) && scenes.length > 0) {
-        await this.createSceneTimelineVideo(videoSources, scenes, preprocessedVideo);
+        await this.createSceneTimelineVideo(videoSources, scenes, preprocessedVideo, targetDuration);
       } else {
         await this.createVerticalVideo(inputVideo, preprocessedVideo, targetDuration);
       }
@@ -112,13 +112,19 @@ class VideoCompositionService {
     ]);
   }
 
-  async createSceneTimelineVideo(videoSources, scenes, outputPath) {
+  async createSceneTimelineVideo(videoSources, scenes, outputPath, targetDuration = 60) {
     const segmentPaths = [];
+    const safeTargetDuration = Math.max(60, Number(targetDuration) || 60);
+
+    const baseDurations = scenes.map((scene) => Math.max(4, Math.min(10, Number(scene?.duration) || 6)));
+    const baseTotal = baseDurations.reduce((sum, value) => sum + value, 0) || 1;
+    const durationRatio = safeTargetDuration / baseTotal;
 
     for (let i = 0; i < scenes.length; i++) {
       const source = videoSources[i % videoSources.length];
       const scene = scenes[i];
-      const clipDuration = Math.max(4, Math.min(10, Number(scene.duration) || 6));
+      const base = Math.max(4, Math.min(10, Number(scene.duration) || 6));
+      const clipDuration = Math.max(4, Math.min(20, Number((base * durationRatio).toFixed(2))));
       const segmentPath = path.join(this.tempDir, `scene_${Date.now()}_${i}.mp4`);
       const captionImagePath = path.join(this.tempDir, `scene_caption_${Date.now()}_${i}.png`);
 
@@ -147,6 +153,8 @@ class VideoCompositionService {
     const concatPath = path.join(this.tempDir, `scene_concat_${Date.now()}.txt`);
     fs.writeFileSync(concatPath, segmentPaths.map((p) => `file '${p}'`).join('\n'), 'utf8');
 
+    const concatOutputPath = path.join(this.tempDir, `scene_concat_output_${Date.now()}.mp4`);
+
     await this.runFfmpeg([
       '-y',
       '-f', 'concat',
@@ -158,8 +166,16 @@ class VideoCompositionService {
       '-profile:v', 'high',
       '-pix_fmt', 'yuv420p',
       '-an',
-      outputPath,
+      concatOutputPath,
     ]);
+
+    const composedDuration = await this.probeDuration(concatOutputPath);
+    if (composedDuration > 0 && composedDuration >= safeTargetDuration - 0.5) {
+      fs.renameSync(concatOutputPath, outputPath);
+      return;
+    }
+
+    await this.createVerticalVideo(concatOutputPath, outputPath, safeTargetDuration);
   }
 
   async createSceneCaptionImage(filePath, text) {
@@ -300,7 +316,7 @@ class VideoCompositionService {
       '-y',
       '-i', voicePath,
       '-i', musicPath,
-      '-filter_complex', '[0:a]aresample=44100,volume=1.45,alimiter=limit=0.92[voice];[1:a]volume=0.22[music];[voice][music]amix=inputs=2:normalize=0:duration=shortest[a]',
+      '-filter_complex', '[0:a]aresample=44100,volume=1.45,alimiter=limit=0.92[voice];[1:a]volume=0.22[music];[voice][music]amix=inputs=2:normalize=0:duration=longest[a]',
       '-map', '[a]',
       '-t', String(duration),
       '-c:a', 'aac',

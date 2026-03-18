@@ -15,7 +15,7 @@ class ScriptAgent {
    * Generate a script for a topic
    * Returns: {script, duration, hooks, cta, emojis, topic}
    */
-  async generateScript(topic) {
+  async generateScript(topic, options = {}) {
     try {
       if (!topic || !topic.topic) {
         throw new Error('Topic is required for script generation');
@@ -23,9 +23,10 @@ class ScriptAgent {
 
       console.log('[ScriptAgent] Generating script for topic:', topic.topic);
       let scriptData = null;
+      const useHindi = this.shouldUseHindi(options);
 
       try {
-        scriptData = await this.llmService.generateScript(topic.topic);
+        scriptData = await this.llmService.generateScript(topic.topic, options);
       } catch (error) {
         console.warn('[ScriptAgent] Error generating script with LLM provider:', error.message);
       }
@@ -33,27 +34,32 @@ class ScriptAgent {
       // Fallback to template if API fails or limit reached
       if (!scriptData) {
         console.log('[ScriptAgent] Using template script as fallback');
-        scriptData = this.generateTemplateScript(topic.topic);
+        scriptData = this.generateTemplateScript(topic.topic, options);
       }
 
-      // Optimize the script
-      const finalScript = await this.optimizeScript(scriptData.script);
+      const useHoneyStyle = String(options.style || '').toLowerCase().includes('honey');
 
-      // Add hooks and CTAs
-      const enrichedScript = this.addHooks(finalScript || scriptData.script);
+      // Keep factual flow stable for Hindi/Honey style instead of rewriting with generic slang.
+      const finalScript = (useHindi || useHoneyStyle)
+        ? scriptData.script
+        : await this.optimizeScript(scriptData.script);
 
-      const scenes = this.normalizeScenes(scriptData.scenes, enrichedScript.script);
+      // Add hooks/CTA with style-aware behavior.
+      const enrichedScript = this.addHooks(finalScript || scriptData.script, options);
+      const cleanedScript = this.cleanScriptForNarration(enrichedScript.script, { useHindi });
+
+      const scenes = this.normalizeScenes(scriptData.scenes, cleanedScript);
 
       const result = {
         topic: topic.topic,
-        script: enrichedScript.script,
+        script: cleanedScript,
         duration: scriptData.duration || VIDEO_CONFIG.TARGET_DURATION || 90,
         hooks: enrichedScript.hooks,
         cta: enrichedScript.cta,
         emojis: scriptData.emojis || [],
         videoPrompt: scriptData.videoPrompt || this.generateVideoPromptFallback(topic.topic),
         scenes,
-        originalScript: scriptData.script,
+        originalScript: cleanedScript,
       };
 
       console.log('[ScriptAgent] Script generated successfully for:', topic.topic);
@@ -89,7 +95,57 @@ class ScriptAgent {
    * Generate a template script when API fails
   * Returns reliable fallback script with structure - long-form narration
    */
-  generateTemplateScript(topic) {
+  generateTemplateScript(topic, options = {}) {
+    const useHindi = this.shouldUseHindi(options);
+    const currentYear = new Date().getUTCFullYear();
+
+    if (useHindi) {
+      const templates = [
+        {
+          script: `सुनिए, आज का विषय है: ${topic}。
+
+सीधे समझिए: अभी क्या अपडेट है, किन लोगों पर असर है, और आपको क्या ध्यान रखना चाहिए。
+
+पहला बिंदु: अपडेट का ठोस सार — क्या बदला है।
+दूसरा बिंदु: व्यावहारिक असर — कीमत, सुविधा, जोखिम या नीति पर प्रभाव।
+तीसरा बिंदु: आगे का संकेत — अगले 30-90 दिनों में क्या देखना चाहिए。
+
+रिपोर्ट्स के अनुसार जहां जानकारी सीमित है, वहां अनुमान नहीं लगाएंगे。
+
+अगर आपको ऐसे साफ और तथ्यात्मक हिंदी एक्सप्लेनर चाहिए, तो फॉलो कीजिए。`,
+          duration: VIDEO_CONFIG.TARGET_DURATION || 90,
+          hooks: ['सुनिए, आज का विषय है'],
+          cta: 'ऐसे साफ और तथ्यात्मक हिंदी एक्सप्लेनर के लिए फॉलो कीजिए',
+          emojis: ['📌', '💡'],
+        },
+        {
+          script: `${currentYear} के संदर्भ में ${topic} का आसान और उपयोगी हिंदी विश्लेषण。
+
+एक: अभी का तथ्य — मुख्य घोषणा/घटना क्या है।
+दो: इसका मतलब — आम यूजर, बिज़नेस या मार्केट पर क्या असर पड़ेगा।
+तीन: actionable takeaway — आपको अभी क्या देखना या करना चाहिए。
+
+यहां अफवाह नहीं, सिर्फ सार्वजनिक जानकारी के आधार पर साफ बातें मिलेंगी。
+
+उपयोगी लगे तो सेव कीजिए और फॉलो कीजिए。`,
+          duration: VIDEO_CONFIG.TARGET_DURATION || 90,
+          hooks: ['आसान और उपयोगी हिंदी विश्लेषण'],
+          cta: 'उपयोगी लगे तो सेव कीजिए और फॉलो कीजिए',
+          emojis: ['🧠', '✅'],
+        },
+      ];
+
+      const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
+      return {
+        script: randomTemplate.script,
+        duration: VIDEO_CONFIG.TARGET_DURATION || 90,
+        hooks: randomTemplate.hooks,
+        cta: randomTemplate.cta,
+        emojis: randomTemplate.emojis,
+        videoPrompt: this.generateVideoPromptFallback(topic),
+      };
+    }
+
     const templates = [
       {
         script: `You won't believe what I just discovered about ${topic}! 🤯
@@ -238,10 +294,21 @@ class ScriptAgent {
    * Add hooks and CTAs to script
    * Ensures engagement-focused structure
    */
-  addHooks(script) {
+  addHooks(script, options = {}) {
     try {
       if (!script) {
         throw new Error('Script is required');
+      }
+
+      const useHindi = this.shouldUseHindi(options);
+      if (useHindi) {
+        const normalized = String(script || '').trim();
+        const hasFollow = /follow|save|share/i.test(normalized);
+        return {
+          script: hasFollow ? normalized : `${normalized}\n\nऐसी साफ और तथ्यात्मक हिंदी अपडेट्स के लिए फॉलो कीजिए।`,
+          hooks: ['हिंदी तथ्यात्मक एक्सप्लेनर'],
+          cta: 'ऐसी साफ और तथ्यात्मक हिंदी अपडेट्स के लिए फॉलो कीजिए।',
+        };
       }
 
       // Select random hook from config
@@ -275,6 +342,29 @@ class ScriptAgent {
       console.error('[ScriptAgent] Error adding hooks:', error.message);
       return { script, hooks: [], cta: '' };
     }
+  }
+
+  cleanScriptForNarration(script, { useHindi = false } = {}) {
+    const cleaned = String(script || '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\s*([#@][\w_]+)/g, '')
+      .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\s+([,.!?;:])/g, '$1')
+      .trim();
+
+    if (!useHindi) {
+      return cleaned;
+    }
+
+    return cleaned
+      .replace(/\b(gonna|wanna)\b/gi, 'going to')
+      .replace(/\b(kind of|sort of)\b/gi, '');
+  }
+
+  shouldUseHindi(options = {}) {
+    return /hindi/i.test(String(options.languageStyle || ''));
   }
 
   /**
