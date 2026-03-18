@@ -7,25 +7,61 @@ import { API_LIMITS, SCRIPT_CONFIG, VIDEO_CONFIG } from '../config/constants.js'
  */
 class LLMService {
   constructor(mistralApiKey, apiLimiter, options = {}) {
-    if (!mistralApiKey && !options.geminiApiKey) {
-      throw new Error('MISTRAL_API_KEY or GOOGLE_GEMINI_API_KEY is required');
-    }
     this.mistralApiKey = mistralApiKey || null;
     this.geminiApiKey = options.geminiApiKey || null;
     this.apiLimiter = apiLimiter;
-    this.mistralBaseURL = 'https://api.mistral.ai/v1/chat/completions';
+    this.aiGatewayEnabled = String(process.env.AI_GATEWAY_ENABLED || options.aiGatewayEnabled || 'false').toLowerCase() === 'true';
+    this.aiGatewayUrl = process.env.AI_GATEWAY_URL || options.aiGatewayUrl || '';
+    this.aiGatewayToken = process.env.AI_GATEWAY_TOKEN || options.aiGatewayToken || '';
+    this.aiGatewayModel = process.env.AI_GATEWAY_MODEL || options.aiGatewayModel || '';
+    this.mistralBaseURL = this.aiGatewayEnabled && this.aiGatewayUrl
+      ? this.aiGatewayUrl
+      : 'https://api.mistral.ai/v1/chat/completions';
     this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
     this.mistralModel = process.env.MISTRAL_MODEL || options.mistralModel || 'mistral-small-latest';
     this.timeout = API_LIMITS.MISTRAL.TIMEOUT;
+
+    if (!this.mistralApiKey && !this.geminiApiKey && !this.isAiGatewayConfigured()) {
+      throw new Error('MISTRAL_API_KEY or GOOGLE_GEMINI_API_KEY is required (or configure AI Gateway)');
+    }
+
+    if (this.aiGatewayEnabled && !this.isAiGatewayConfigured()) {
+      console.warn('[LLMService] AI Gateway enabled but AI_GATEWAY_URL/AI_GATEWAY_TOKEN is missing. Falling back to direct providers.');
+    }
+  }
+
+  isAiGatewayConfigured() {
+    return this.aiGatewayEnabled && Boolean(this.aiGatewayUrl) && Boolean(this.aiGatewayToken);
+  }
+
+  getMistralEndpoint() {
+    if (this.isAiGatewayConfigured()) {
+      return this.aiGatewayUrl;
+    }
+    return this.mistralBaseURL;
+  }
+
+  getMistralHeaders() {
+    if (this.isAiGatewayConfigured()) {
+      return {
+        'cf-aig-authorization': `Bearer ${this.aiGatewayToken}`,
+        'Content-Type': 'application/json',
+      };
+    }
+
+    return {
+      Authorization: `Bearer ${this.mistralApiKey}`,
+      'Content-Type': 'application/json',
+    };
   }
 
   async callMistral(prompt, { temperature = 0.7, maxTokens = 800, json = false } = {}) {
-    if (!this.mistralApiKey) {
+    if (!this.mistralApiKey && !this.isAiGatewayConfigured()) {
       throw new Error('Mistral API key is not configured');
     }
 
     const payload = {
-      model: this.mistralModel,
+      model: this.aiGatewayModel || this.mistralModel,
       messages: [
         {
           role: 'system',
@@ -43,12 +79,9 @@ class LLMService {
       payload.response_format = { type: 'json_object' };
     }
 
-    const response = await axios.post(this.mistralBaseURL, payload, {
+    const response = await axios.post(this.getMistralEndpoint(), payload, {
       timeout: this.timeout,
-      headers: {
-        Authorization: `Bearer ${this.mistralApiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: this.getMistralHeaders(),
     });
 
     return response.data?.choices?.[0]?.message?.content || null;
@@ -255,11 +288,59 @@ Requirements:
     }
   }
 
+  async generateThemedTopic(theme) {
+    try {
+      const safeTheme = String(theme || 'Technology update').trim();
+      const today = new Date().toISOString().split('T')[0];
+      const currentYear = new Date().getUTCFullYear();
+      const prompt = `Generate 1 highly relevant short-form reel topic in this strict theme: "${safeTheme}".
+
+Today (UTC): ${today}
+
+Requirements:
+- Topic must be timely and specific (avoid vague generic ideas)
+- Prefer India-relevant angle when applicable
+- Recency rule: avoid stale years/topics; do NOT choose topics centered on years older than ${currentYear - 1}
+- For technology/politics/news themes, prefer developments from last 30-90 days
+- Must be useful for audience: clear practical impact on users/citizens/market
+- Return ONLY JSON format with no extra text:
+{
+  "topic": "short specific topic title",
+  "description": "1-2 line reason this matters now",
+  "hook": "attention-grabbing first line",
+  "keywords": ["keyword1", "keyword2", "keyword3"]
+}`;
+
+      if (this.mistralApiKey && (await this.apiLimiter.canMakeRequest('MISTRAL'))) {
+        try {
+          const content = await this.callMistral(prompt, { temperature: 0.8, maxTokens: 450, json: true });
+          await this.apiLimiter.consumeLimit('MISTRAL', 1);
+          const topicData = this.extractJson(content) || JSON.parse(content);
+          return topicData;
+        } catch (mistralError) {
+          console.warn('[LLMService] Mistral themed topic failed, trying Gemini fallback:', mistralError.message);
+        }
+      }
+
+      if (this.geminiApiKey && (await this.apiLimiter.canMakeRequest('GEMINI'))) {
+        const content = await this.callGemini(prompt, { temperature: 0.9, maxTokens: 500 });
+        await this.apiLimiter.consumeLimit('GEMINI', 1);
+        const topicData = this.extractJson(content);
+        return topicData;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('[LLMService] Error generating themed topic:', error.message);
+      return null;
+    }
+  }
+
   /**
    * Generate a script for a given topic (targets 1-2 minute duration)
    * Returns: {script, duration, hooks}
    */
-  async generateScript(topic) {
+  async generateScript(topic, options = {}) {
     try {
       if (!topic) {
         throw new Error('Topic is required for script generation');
@@ -268,6 +349,36 @@ Requirements:
       const { min, max, target } = this.getScriptDurationBounds();
       const wordsMin = Math.max(180, Math.round(min * 2.6));
       const wordsMax = Math.max(wordsMin + 40, Math.round(max * 2.8));
+      const languageStyle = String(options.languageStyle || '').trim();
+      const theme = String(options.theme || '').trim();
+      const style = String(options.style || '').trim();
+      const wantsHindi = /hindi/i.test(languageStyle);
+      const currentYear = new Date().getUTCFullYear();
+      const extraInstruction = [
+        languageStyle
+          ? wantsHindi
+            ? `- Language style: ${languageStyle}. Write the full narration in natural conversational Hindi using Devanagari script only. Keep the wording simple, clear, and spoken, without Roman-script Hinglish.`
+            : `- Language style: ${languageStyle}. Use natural conversational Hinglish (Hindi + English mix in Roman script), avoid overly formal tone and avoid difficult words.`
+          : '',
+        theme
+          ? `- Keep content strictly within theme: ${theme}`
+          : '',
+        style
+          ? `- Narrative style: ${style}`
+          : '',
+        '- Hard anti-hallucination rule: do not invent numbers, quotes, dates, or claims.',
+        '- Avoid exact numeric claims/predictions unless they are widely verified; prefer cautious phrasing over precise unsupported numbers.',
+        `- Year consistency rule: avoid stale framing (e.g., ${currentYear - 2} launch/news as current) unless explicitly marked historical comparison.`,
+        '- Value-add rule: include at least 3 concrete facts with named entities/policies/products/timeline.',
+        '- Each fact must answer at least one of: what changed, why now, who is affected, what to do next.',
+        wantsHindi
+          ? '- If a point is uncertain, clearly say "रिपोर्ट्स के अनुसार" or "सार्वजनिक जानकारी के आधार पर".'
+          : '- If a point is uncertain, clearly say "reports ke mutabik" or "public reports ke basis par".',
+        '- Use a clean explainer flow: Hook -> Context -> 3 clear facts -> Why it matters -> Actionable takeaway -> CTA.',
+        '- Avoid sensational words like "shocking", "mind-blowing", "guaranteed" unless factually justified.',
+      ]
+        .filter(Boolean)
+        .join('\n');
 
       console.log('[LLMService] Generating long-form script for topic:', topic, `(${min}-${max}s target=${target}s)`);
       const prompt = `Create an Instagram Reel script for the topic: "${topic}"
@@ -280,6 +391,7 @@ Requirements:
 - Include a clear call-to-action (CTA) in the last 5 seconds
 - Add trending language and phrases
 - Format as a natural speaking script (conversational, engaging)
+- Avoid misinformation; keep claims grounded and concise
 - Also create a strong, cinematic visual generation prompt for the video model
 - Visual prompt must describe scene, camera movement, lighting, mood, style, quality, and orientation
 - Example style: "Aerial cinematic video of Mumbai skyline at sunset, dramatic lighting, 4k, vertical 9:16"
@@ -305,6 +417,7 @@ Rules for scenes:
 - visualPrompt must be production-ready for stock/video generation query
 - Keep scene text aligned to spoken narration
 - Make sure total duration of all scenes matches the duration value
+${extraInstruction ? `\nAdditional constraints:\n${extraInstruction}` : ''}
 `;
 
       if (this.mistralApiKey && (await this.apiLimiter.canMakeRequest('MISTRAL'))) {
@@ -316,7 +429,45 @@ Rules for scenes:
           console.log('[LLMService] Generated long-form script with Mistral for:', topic);
           return normalized;
         } catch (mistralError) {
-          console.warn('[LLMService] Mistral script generation failed, trying Gemini fallback:', mistralError.message);
+          console.warn('[LLMService] Mistral script generation failed, retrying with compact schema:', mistralError.message);
+
+          // Retry with a compact schema to avoid malformed nested JSON from large scenes arrays.
+          try {
+            const compactPrompt = `Create a factual Instagram Reel narration for: "${topic}".
+
+Today context: ${new Date().toISOString().split('T')[0]}
+
+Return STRICT valid JSON only, minified, no markdown, no trailing commas.
+Schema:
+{
+  "script": "${wantsHindi ? 'Natural spoken Hindi in Devanagari' : 'Natural spoken Hinglish'} with concrete facts and practical value",
+  "duration": ${target},
+  "hook": "short opening hook",
+  "cta": "short CTA",
+  "emojis": ["😀","📌","✅"],
+  "videoPrompt": "single cinematic 9:16 stock-video generation prompt"
+}
+
+Rules:
+- Mention at least 3 concrete facts and why they matter now
+- Avoid stale framing; treat years older than ${new Date().getUTCFullYear() - 1} as historical context only
+- Do not invent unverifiable numbers
+- If numeric data is uncertain, use qualitative wording (e.g., "तेज़", "उच्च क्षमता", "प्रारंभिक चरण") instead of exact figures
+- Keep duration between ${min}-${max} seconds`;
+
+            const compactContent = await this.callMistral(compactPrompt, {
+              temperature: 0.45,
+              maxTokens: 1100,
+              json: true,
+            });
+            await this.apiLimiter.consumeLimit('MISTRAL', 1);
+            const compactData = this.extractJson(compactContent) || JSON.parse(compactContent);
+            const normalizedCompact = this.normalizeScriptPayload(compactData);
+            console.log('[LLMService] Generated script with compact Mistral retry for:', topic);
+            return normalizedCompact;
+          } catch (compactError) {
+            console.warn('[LLMService] Compact Mistral retry failed, trying Gemini fallback:', compactError.message);
+          }
         }
       }
 
