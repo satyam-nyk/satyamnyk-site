@@ -19,15 +19,25 @@ class LLMService {
       : 'https://api.mistral.ai/v1/chat/completions';
     this.geminiBaseURL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
     this.mistralModel = process.env.MISTRAL_MODEL || options.mistralModel || 'mistral-small-latest';
+    this.cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID || options.cloudflareAccountId || '';
+    this.cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN || options.cloudflareApiToken || '';
+    this.workersAiModel = process.env.CLOUDFLARE_WORKERS_AI_MODEL || options.workersAiModel || '@cf/meta/llama-3.2-3b-instruct';
+    this.workersAiBaseURL = this.cloudflareAccountId
+      ? `https://api.cloudflare.com/client/v4/accounts/${this.cloudflareAccountId}/ai/run`
+      : '';
     this.timeout = API_LIMITS.MISTRAL.TIMEOUT;
 
-    if (!this.mistralApiKey && !this.geminiApiKey && !this.isAiGatewayConfigured()) {
-      throw new Error('MISTRAL_API_KEY or GOOGLE_GEMINI_API_KEY is required (or configure AI Gateway)');
+    if (!this.mistralApiKey && !this.geminiApiKey && !this.isAiGatewayConfigured() && !this.isWorkersAiConfigured()) {
+      throw new Error('MISTRAL_API_KEY or GOOGLE_GEMINI_API_KEY is required (or configure AI Gateway / Workers AI)');
     }
 
     if (this.aiGatewayEnabled && !this.isAiGatewayConfigured()) {
       console.warn('[LLMService] AI Gateway enabled but AI_GATEWAY_URL/AI_GATEWAY_TOKEN is missing. Falling back to direct providers.');
     }
+  }
+
+  isWorkersAiConfigured() {
+    return Boolean(this.workersAiBaseURL) && Boolean(this.cloudflareApiToken) && Boolean(this.workersAiModel);
   }
 
   isAiGatewayConfigured() {
@@ -113,6 +123,112 @@ class LLMService {
     );
 
     return response.data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  }
+
+  extractWorkersAiText(data) {
+    const result = data?.result;
+    if (!result) return null;
+    if (typeof result === 'string') return result;
+    if (typeof result.response === 'string') return result.response;
+    if (typeof result.output_text === 'string') return result.output_text;
+
+    if (Array.isArray(result.messages) && result.messages.length > 0) {
+      const assistant = [...result.messages].reverse().find((msg) => msg?.role === 'assistant');
+      if (assistant && typeof assistant.content === 'string') {
+        return assistant.content;
+      }
+    }
+
+    if (Array.isArray(result.content)) {
+      const textParts = result.content
+        .map((part) => (typeof part?.text === 'string' ? part.text : ''))
+        .filter(Boolean);
+      if (textParts.length > 0) {
+        return textParts.join('\n');
+      }
+    }
+
+    return null;
+  }
+
+  async callWorkersAI(prompt, { temperature = 0.7, maxTokens = 800, json = false } = {}) {
+    if (!this.isWorkersAiConfigured()) {
+      throw new Error('Cloudflare Workers AI is not configured');
+    }
+
+    const payload = {
+      messages: [
+        {
+          role: 'system',
+          content: json
+            ? 'You are a precise assistant that returns strict JSON only when requested.'
+            : 'You are a precise assistant for Instagram Reels content generation.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: maxTokens,
+      temperature,
+    };
+
+    if (json) {
+      payload.response_format = { type: 'json_object' };
+    }
+
+    const response = await axios.post(
+      `${this.workersAiBaseURL}/${this.workersAiModel}`,
+      payload,
+      {
+        timeout: this.timeout,
+        headers: {
+          Authorization: `Bearer ${this.cloudflareApiToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return this.extractWorkersAiText(response.data);
+  }
+
+  async tryWorkersAiJson(prompt, { temperature = 0.7, maxTokens = 800 } = {}) {
+    if (!this.isWorkersAiConfigured()) return null;
+
+    if (this.apiLimiter && !(await this.apiLimiter.canMakeRequest('WORKERS_AI'))) {
+      console.warn('[LLMService] Workers AI quota unavailable for JSON generation');
+      return null;
+    }
+
+    try {
+      const content = await this.callWorkersAI(prompt, { temperature, maxTokens, json: true });
+      if (this.apiLimiter) {
+        await this.apiLimiter.consumeLimit('WORKERS_AI', 1);
+      }
+
+      if (!content) return null;
+      return this.extractJson(content) || JSON.parse(content);
+    } catch (error) {
+      console.warn('[LLMService] Workers AI JSON generation failed:', error.message);
+      return null;
+    }
+  }
+
+  async tryWorkersAiText(prompt, { temperature = 0.7, maxTokens = 800 } = {}) {
+    if (!this.isWorkersAiConfigured()) return null;
+
+    if (this.apiLimiter && !(await this.apiLimiter.canMakeRequest('WORKERS_AI'))) {
+      console.warn('[LLMService] Workers AI quota unavailable for text generation');
+      return null;
+    }
+
+    try {
+      const content = await this.callWorkersAI(prompt, { temperature, maxTokens, json: false });
+      if (this.apiLimiter) {
+        await this.apiLimiter.consumeLimit('WORKERS_AI', 1);
+      }
+      return content || null;
+    } catch (error) {
+      console.warn('[LLMService] Workers AI text generation failed:', error.message);
+      return null;
+    }
   }
 
   extractJson(content) {
@@ -223,10 +339,16 @@ Requirements:
         const topicData = this.extractJson(content);
         if (!topicData) {
           console.warn('[LLMService] Could not parse Gemini JSON response:', content);
-          return null;
+        } else {
+          console.log('[LLMService] Generated yesterday trending topic with Gemini fallback:', topicData.topic);
+          return topicData;
         }
-        console.log('[LLMService] Generated yesterday trending topic with Gemini fallback:', topicData.topic);
-        return topicData;
+      }
+
+      const workersTopicData = await this.tryWorkersAiJson(prompt, { temperature: 1, maxTokens: 500 });
+      if (workersTopicData) {
+        console.log('[LLMService] Generated yesterday trending topic with Workers AI fallback:', workersTopicData.topic);
+        return workersTopicData;
       }
 
       console.warn('[LLMService] No LLM quota available for yesterday topic generation');
@@ -274,10 +396,16 @@ Requirements:
         const topicData = this.extractJson(content);
         if (!topicData) {
           console.warn('[LLMService] Could not parse Gemini JSON response:', content);
-          return null;
+        } else {
+          console.log('[LLMService] Generated topic with Gemini fallback:', topicData.topic);
+          return topicData;
         }
-        console.log('[LLMService] Generated topic with Gemini fallback:', topicData.topic);
-        return topicData;
+      }
+
+      const workersTopicData = await this.tryWorkersAiJson(prompt, { temperature: 1, maxTokens: 500 });
+      if (workersTopicData) {
+        console.log('[LLMService] Generated topic with Workers AI fallback:', workersTopicData.topic);
+        return workersTopicData;
       }
 
       console.warn('[LLMService] No LLM quota available for topic generation');
@@ -326,8 +454,11 @@ Requirements:
         const content = await this.callGemini(prompt, { temperature: 0.9, maxTokens: 500 });
         await this.apiLimiter.consumeLimit('GEMINI', 1);
         const topicData = this.extractJson(content);
-        return topicData;
+        if (topicData) return topicData;
       }
+
+      const workersTopicData = await this.tryWorkersAiJson(prompt, { temperature: 0.9, maxTokens: 500 });
+      if (workersTopicData) return workersTopicData;
 
       return null;
     } catch (error) {
@@ -477,11 +608,17 @@ Rules:
         await this.apiLimiter.consumeLimit('GEMINI', 1);
         if (!scriptData) {
           console.warn('[LLMService] Could not parse Gemini JSON response:', content);
-          return null;
+        } else {
+          const normalized = this.normalizeScriptPayload(scriptData);
+          console.log('[LLMService] Generated long-form script with Gemini fallback for:', topic);
+          return normalized;
         }
-        
-        const normalized = this.normalizeScriptPayload(scriptData);
-        console.log('[LLMService] Generated long-form script with Gemini fallback for:', topic);
+      }
+
+      const workersScriptData = await this.tryWorkersAiJson(prompt, { temperature: 0.8, maxTokens: 1500 });
+      if (workersScriptData) {
+        const normalized = this.normalizeScriptPayload(workersScriptData);
+        console.log('[LLMService] Generated long-form script with Workers AI fallback for:', topic);
         return normalized;
       }
 
@@ -527,6 +664,10 @@ Requirements:
       if (!content && this.geminiApiKey && (await this.apiLimiter.canMakeRequest('GEMINI'))) {
         content = await this.callGemini(prompt, { temperature: 0.5, maxTokens: 250 });
         await this.apiLimiter.consumeLimit('GEMINI', 1);
+      }
+
+      if (!content) {
+        content = await this.tryWorkersAiText(prompt, { temperature: 0.5, maxTokens: 250 });
       }
 
       const parsed = this.extractJson(content || '') || { post: '' };
@@ -584,6 +725,11 @@ Requirements:
         const optimizedText = await this.callGemini(prompt, { temperature: 0.7, maxTokens: 500 });
         await this.apiLimiter.consumeLimit('GEMINI', 1);
         return optimizedText || text;
+      }
+
+      const workersOptimized = await this.tryWorkersAiText(prompt, { temperature: 0.7, maxTokens: 500 });
+      if (workersOptimized) {
+        return workersOptimized;
       }
 
       return text;
@@ -644,8 +790,14 @@ Requirements:
    */
   async healthCheck() {
     try {
-      const service = this.mistralApiKey ? 'MISTRAL' : 'GEMINI';
-      const limits = await this.apiLimiter.checkLimit(service);
+      const service = this.mistralApiKey
+        ? 'MISTRAL'
+        : this.geminiApiKey
+          ? 'GEMINI'
+          : this.isWorkersAiConfigured()
+            ? 'WORKERS_AI'
+            : 'LLM';
+      const limits = service === 'LLM' ? { available: true, remaining: null } : await this.apiLimiter.checkLimit(service);
       return {
         service,
         available: limits.available,

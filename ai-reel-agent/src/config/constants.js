@@ -11,6 +11,11 @@ export const API_LIMITS = {
     CALLS_PER_MINUTE: 15,
     TIMEOUT: 30000, // 30 seconds
   },
+  WORKERS_AI: {
+    DAILY_LIMIT: 300,
+    CALLS_PER_MINUTE: 300,
+    TIMEOUT: 30000, // 30 seconds
+  },
   HEYGEN: {
     MONTHLY_LIMIT: 10,
     MONTHLY_CREDITS: 3000,
