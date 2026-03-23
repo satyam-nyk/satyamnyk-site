@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import time
 from typing import Any
 
 import pandas as pd
@@ -28,6 +29,30 @@ from utils import (
     fmt_score,
     top_user,
 )
+
+# ─────────────────────────────────────────────
+# Rate limiting (prevent abuse)
+# ─────────────────────────────────────────────
+def check_rate_limit(max_uploads: int = 5, window_minutes: int = 60) -> tuple[bool, str]:
+    """Check if user has exceeded upload limit."""
+    session_key = "upload_timestamps"
+    current_time = time.time()
+    window_seconds = window_minutes * 60
+    
+    if session_key not in st.session_state:
+        st.session_state[session_key] = []
+    
+    # Remove timestamps outside the window
+    st.session_state[session_key] = [
+        ts for ts in st.session_state[session_key] 
+        if current_time - ts < window_seconds
+    ]
+    
+    if len(st.session_state[session_key]) >= max_uploads:
+        return False, f"⏳ Rate limit: {max_uploads} uploads per {window_minutes} minutes. Try again in a moment."
+    
+    st.session_state[session_key].append(current_time)
+    return True, ""
 
 # ─────────────────────────────────────────────
 # Page config
@@ -84,8 +109,21 @@ Export your Instagram data to get started:
 """
     )
     st.divider()
+    st.markdown("### 🔒 Privacy & Security")
+    st.markdown(
+        """
+✅ **All processing happens locally** — your data never leaves this page  
+✅ **No server storage** — files are deleted immediately after analysis  
+✅ **No tracking** — completely anonymous  
+✅ **Open source** — audit the code anytime  
+
+⚠️ Uploaded files are processed in memory and automatically deleted within minutes.
+"""
+    )
+    st.divider()
     st.caption("✅ Supports JSON & HTML export formats")
-    st.caption("🔒 All processing happens locally — no data leaves your device")
+    st.caption("📊 Works with 1+ chat conversations")
+    st.caption("🚀 Instant analysis on your device")
 
 # ─────────────────────────────────────────────
 # Title
@@ -122,6 +160,26 @@ if not uploaded_file:
 | 🏆 Engagement Score | Weighted score (60 % replies + 40 % reactions) |
 """
         )
+    st.stop()
+
+# ─────────────────────────────────────────────
+# Rate limiting & file validation
+# ─────────────────────────────────────────────
+allowed, rate_limit_msg = check_rate_limit(max_uploads=5, window_minutes=60)
+if not allowed:
+    st.error(rate_limit_msg)
+    st.stop()
+
+# File size validation (500 MB limit)
+MAX_FILE_SIZE_MB = 500
+file_size_mb = uploaded_file.size / (1024 * 1024)
+
+if file_size_mb > MAX_FILE_SIZE_MB:
+    st.error(
+        f"❌ File too large: {file_size_mb:.1f} MB  "
+        f"(limit: {MAX_FILE_SIZE_MB} MB)  "
+        f"Try exporting with JSON format only (smaller than HTML)."
+    )
     st.stop()
 
 # ─────────────────────────────────────────────
