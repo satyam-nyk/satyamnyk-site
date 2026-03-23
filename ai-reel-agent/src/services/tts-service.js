@@ -14,11 +14,14 @@ class TTSService {
     this.timeout = API_LIMITS.TTS?.TIMEOUT || 15000;
     this.provider = process.env.TTS_PROVIDER || 'auto';
     this.coquiModel = process.env.COQUI_TTS_MODEL || 'tts_models/en/ljspeech/tacotron2-DDC';
-    this.voice = process.env.EDGE_TTS_VOICE || 'en-US-AvaMultilingualNeural';
+    this.voice = process.env.EDGE_TTS_VOICE || 'en-US-AndrewMultilingualNeural';
     this.hinglishVoice = process.env.EDGE_TTS_HINGLISH_VOICE || 'hi-IN-SwaraNeural';
     this.rate = process.env.EDGE_TTS_RATE || '+0%';
     this.pitch = process.env.EDGE_TTS_PITCH || '+0Hz';
     this.volume = process.env.EDGE_TTS_VOLUME || '+2%';
+    this.elevenLabsApiKey = process.env.ELEVENLABS_API_KEY || '';
+    this.elevenLabsVoiceId = process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb';
+    this.elevenLabsModel = process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2';
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
@@ -36,7 +39,7 @@ class TTSService {
     try {
       console.log('[TTSService] Generating audio for script (length:', script.length, ')');
 
-      const audioScript = this.humanizeScript(script).substring(0, 3500);
+      const audioScript = this.preprocessScriptForTTS(script).substring(0, 3500);
       const selectedVoice = this.selectVoiceForText(audioScript, voiceId);
 
       if (!audioScript) {
@@ -46,7 +49,24 @@ class TTSService {
       const filename = `tts_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.mp3`;
       const audioPath = path.join(this.audioDir, filename);
 
-      if (this.provider === 'coqui' || this.provider === 'auto') {
+      // Try ElevenLabs first (if configured)
+      if (this.elevenLabsApiKey) {
+        try {
+          console.log('[TTSService] Attempting ElevenLabs TTS...');
+          await this.runElevenLabsTts(audioScript, audioPath);
+          console.log('[TTSService] ElevenLabs TTS succeeded');
+        } catch (elevenError) {
+          console.warn('[TTSService] ElevenLabs failed, falling back to Edge TTS:', elevenError.message);
+          if (this.provider === 'coqui' || this.provider === 'auto') {
+            const coquiSuccess = await this.tryCoquiTts(audioScript, audioPath);
+            if (!coquiSuccess) {
+              await this.runEdgeTts(audioScript, audioPath, selectedVoice);
+            }
+          } else {
+            await this.runEdgeTts(audioScript, audioPath, selectedVoice);
+          }
+        }
+      } else if (this.provider === 'coqui' || this.provider === 'auto') {
         const coquiSuccess = await this.tryCoquiTts(audioScript, audioPath);
         if (!coquiSuccess && this.provider === 'coqui') {
           throw new Error('Coqui TTS selected but unavailable');
@@ -93,20 +113,41 @@ class TTSService {
     const sceneOutputs = [];
 
     for (let i = 0; i < scenes.length; i++) {
-      const text = this.humanizeScript(scenes[i]?.text || '').slice(0, 320);
+      const rawText = scenes[i]?.text || '';
+      const text = this.preprocessScriptForTTS(rawText).slice(0, 320);
+      console.log(`[TTSService] Scene ${i}: Preprocessing applied (raw: "${rawText.substring(0, 50)}..." -> preprocessed: "${text.substring(0, 50)}...")`);
       const voice = this.selectVoiceForText(text, voiceId);
       if (!text) continue;
       const scenePath = path.join(this.audioDir, `scene_tts_${Date.now()}_${i}.mp3`);
 
-      if (this.provider === 'coqui' || this.provider === 'auto') {
+      // Try ElevenLabs first (if configured)
+      if (this.elevenLabsApiKey) {
+        try {
+          console.log('[TTSService] Scene', i, ': Attempting ElevenLabs TTS...');
+          await this.runElevenLabsTts(text, scenePath);
+          console.log('[TTSService] Scene', i, ': ElevenLabs succeeded');
+        } catch (elevenError) {
+          console.warn('[TTSService] Scene', i, ': ElevenLabs failed, falling back:', elevenError.message);
+          if (this.provider === 'coqui' || this.provider === 'auto') {
+            const coquiSuccess = await this.tryCoquiTts(text, scenePath);
+            if (!coquiSuccess) {
+              await this.runEdgeTts(text, scenePath, voice);
+            }
+          } else {
+            await this.runEdgeTts(text, scenePath, voice);
+          }
+        }
+      } else if (this.provider === 'coqui' || this.provider === 'auto') {
         const coquiSuccess = await this.tryCoquiTts(text, scenePath);
         if (!coquiSuccess && this.provider === 'coqui') {
           throw new Error('Coqui TTS selected but unavailable');
         }
         if (!coquiSuccess) {
+          console.log('[TTSService] Scene', i, ': Using Edge TTS');
           await this.runEdgeTts(text, scenePath, voice);
         }
       } else {
+        console.log('[TTSService] Scene', i, ': Using Edge TTS (default)');
         await this.runEdgeTts(text, scenePath, voice);
       }
 
@@ -263,14 +304,19 @@ class TTSService {
     return voiceMap[voiceId] || voiceId || this.voice;
   }
 
-  humanizeScript(script) {
-    return String(script || '')
+  preprocessScriptForTTS(script) {
+    let text = String(script || '')
       .replace(/[#*_`]/g, '')
       .replace(/\*\*(.*?)\*\*/g, '$1')
       .replace(/https?:\/\/\S+/g, '')
       .replace(/#[\w]+/g, '')
       .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
-      .replace(/\s+/g, ' ')
+      .replace(/\s+/g, ' ');
+    
+    // Convert numbers to words for better TTS pronunciation
+    text = this.convertNumbersToWords(text);
+    
+    return text
       .replace(/\bAI\b/g, 'A I')
       .replace(/\bUSA\b/g, 'U S A')
       .replace(/\bUK\b/g, 'U K')
@@ -278,6 +324,53 @@ class TTSService {
       .replace(/\s*([,.!?;:])\s*/g, '$1 ')
       .replace(/\.{2,}/g, '.')
       .trim();
+  }
+
+  convertNumbersToWords(text) {
+    // Common Indian numbers
+    text = text.replace(/(\d+)\s*(crore|lakh|thousand|million|billion)/gi, (match, num, unit) => {
+      const numInt = parseInt(num);
+      return this.numberToWords(numInt) + ' ' + unit.toLowerCase();
+    });
+    
+    // Percentages
+    text = text.replace(/(\d+(?:\.\d+)?)\s*%/g, (match, num) => {
+      return this.numberToWords(parseFloat(num)) + ' percent';
+    });
+    
+    // Currency (rupees)
+    text = text.replace(/Rs\.?\s*(\d+)/gi, (match, num) => {
+      return 'rupees ' + this.numberToWords(parseInt(num));
+    });
+    
+    // Standalone numbers (but preserve years like 2026)
+    text = text.replace(/(\d{1,3})(?![\d])/g, (match, num) => {
+      const n = parseInt(num);
+      // Keep short numbers for years/sequences
+      if (n > 1900 && n < 2100) return num;
+      return this.numberToWords(n);
+    });
+    
+    return text;
+  }
+
+  numberToWords(num) {
+    const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const teens = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    
+    if (num === 0) return 'zero';
+    if (num < 10) return ones[num];
+    if (num < 20) return teens[num - 10];
+    if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 ? ' ' + ones[num % 10] : '');
+    if (num < 1000) return ones[Math.floor(num / 100)] + ' hundred' + (num % 100 ? ' ' + this.numberToWords(num % 100) : '');
+    if (num < 100000) return this.numberToWords(Math.floor(num / 1000)) + ' thousand' + (num % 1000 ? ' ' + this.numberToWords(num % 1000) : '');
+    
+    return num.toString();
+  }
+
+  humanizeScript(script) {
+    return this.preprocessScriptForTTS(script);
   }
 
   selectVoiceForText(text, voiceId = 'default') {
@@ -335,6 +428,41 @@ class TTSService {
         fs.unlinkSync(normalizedPath);
       }
       console.warn('[TTSService] Audio normalization skipped:', error.message);
+    }
+  }
+
+  async runElevenLabsTts(text, outputPath) {
+    if (!this.elevenLabsApiKey) {
+      throw new Error('ElevenLabs API key not configured');
+    }
+
+    const axios = (await import('axios')).default;
+    const url = `https://api.elevenlabs.io/v1/text-to-speech/${this.elevenLabsVoiceId}`;
+    
+    try {
+      const response = await axios.post(
+        url,
+        {
+          text,
+          model_id: this.elevenLabsModel,
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        },
+        {
+          headers: {
+            'xi-api-key': this.elevenLabsApiKey,
+            'Content-Type': 'application/json',
+          },
+          responseType: 'arraybuffer',
+          timeout: this.timeout,
+        }
+      );
+
+      fs.writeFileSync(outputPath, response.data);
+    } catch (error) {
+      throw new Error(`ElevenLabs TTS failed: ${error.message}`);
     }
   }
 

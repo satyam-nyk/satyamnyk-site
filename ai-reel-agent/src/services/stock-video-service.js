@@ -222,7 +222,18 @@ class StockVideoService {
     const hue = hash % 360;
     const filename = `procedural_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.mp4`;
     const outputPath = path.join(this.stockDir, filename);
-    const color = `hsv(${hue}\,0.45\,0.22)`;
+    // Convert HSV(hue, 0.45, 0.22) to hex — FFmpeg 8.x dropped the hsv() color function
+    const h = hue, s = 0.45, v = 0.22;
+    const c = v * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = v - c;
+    let r, g, b;
+    if (h < 60)       { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else              { r = c; g = 0; b = x; }
+    const toHex = n => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+    const color = `0x${toHex(r)}${toHex(g)}${toHex(b)}`;
 
     const result = spawnSync('ffmpeg', [
       '-y',

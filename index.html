@@ -768,6 +768,26 @@
       margin: 0;
       line-height: 1.6;
     }
+    .project-gallery {
+      margin-top: var(--space-m);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .project-shot {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .project-shot:hover {
+      transform: translateY(-2px);
+      border-color: var(--color-accent);
+    }
     
     /* Values & Approach */
     .values-grid {
@@ -1196,6 +1216,8 @@
       .live-systems-grid { grid-template-columns: repeat(2, 1fr); }
       .expertise-grid { grid-template-columns: repeat(2, 1fr); }
       .case-study { padding: var(--space-l); }
+      .project-gallery { grid-template-columns: 1fr; }
+      .project-shot { height: auto; max-height: 420px; }
     }
     
     @media (max-width: 600px) {
@@ -1560,6 +1582,22 @@
         <div style="margin-top: var(--space-m); display: flex; gap: 14px; flex-wrap: wrap;">
           <a href="./ai-reel-agent-showcase/index.html" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-accent); text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">View Microsite <span style="font-size: 1.2rem;">→</span></a>
           <a href="./ai-reel-agent/public/dashboard.html" style="display: inline-flex; align-items: center; gap: 0.5rem; color: #8b5cf6; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">View Dashboard <span style="font-size: 1.2rem;">→</span></a>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-icon">📊</div>
+        <h3 class="project-name">IG Reel Analytics</h3>
+        <p class="project-desc">Built a production-ready Streamlit analytics tool that ingests Instagram export ZIP files, supports JSON and HTML chat formats, and computes reel-level engagement metrics including reels sent, replies within 24 hours, reactions, and reply-rate across chats.</p>
+
+        <div class="project-gallery" aria-label="IG Reel Analytics screenshots">
+          <img class="project-shot" src="./assets/ig-reel-analytics/screenshot-1.jpg" alt="IG Reel Analytics sample DM export screenshot 1" loading="lazy">
+          <img class="project-shot" src="./assets/ig-reel-analytics/screenshot-2.jpg" alt="IG Reel Analytics sample DM export screenshot 2" loading="lazy">
+          <img class="project-shot" src="./assets/ig-reel-analytics/screenshot-3.jpg" alt="IG Reel Analytics sample DM export screenshot 3" loading="lazy">
+        </div>
+
+        <div style="margin-top: var(--space-m); display: flex; gap: 14px; flex-wrap: wrap;">
+          <a href="https://ig-reel-analytics-satyam-nyk.loca.lt" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--color-accent); text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">Open Live App (Public Demo) <span style="font-size: 1.2rem;">→</span></a>
+          <a href="./ig-reel-analytics/README.md" style="display: inline-flex; align-items: center; gap: 0.5rem; color: #8b5cf6; text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: all 0.3s ease;" onmouseover="this.style.transform='translateX(4px)'" onmouseout="this.style.transform='translateX(0)'">View Docs <span style="font-size: 1.2rem;">→</span></a>
         </div>
       </div>
     </section>

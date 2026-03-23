@@ -14,10 +14,14 @@ export function createWebhookRouter(
   scriptAgent,
   videoAgent,
   instagramService,
-  youtubeService = null
+  youtubeService = null,
+  emailNotifierService = null
 ) {
   const router = express.Router();
+  const minDurationToleranceSeconds = Math.max(0, Number(process.env.MIN_VIDEO_DURATION_TOLERANCE_SECONDS || 1));
   let dailyGenerationInProgress = false;
+  let generationStartedAt = 0;
+  const GENERATION_TIMEOUT_MS = 45 * 60 * 1000; // 45 minutes
   let manualPostInProgress = false;
   const THEMED_CONTENT_SLOTS = [
     {
@@ -75,8 +79,14 @@ export function createWebhookRouter(
     }
 
     const duration = getVideoDurationSeconds(input);
-    if (duration < minSeconds) {
+    if ((duration + minDurationToleranceSeconds) < minSeconds) {
       throw new Error(`Generated video too short (${duration.toFixed(2)}s). Minimum required is ${minSeconds}s.`);
+    }
+
+    if (duration < minSeconds) {
+      console.warn(
+        `[Webhook] Accepting short video (${duration.toFixed(2)}s) within tolerance of ${minDurationToleranceSeconds}s (minimum ${minSeconds}s)`
+      );
     }
   }
 
@@ -110,6 +120,15 @@ export function createWebhookRouter(
       description,
       tags: ['shorts', 'news', 'current affairs', 'ai reel agent'],
     };
+  }
+
+  async function notifyPostOutcome(payload) {
+    if (!emailNotifierService) return;
+    try {
+      await emailNotifierService.sendPostOutcome(payload);
+    } catch (error) {
+      console.warn('[Webhook] Email notification failed:', error.message);
+    }
   }
 
   function getThemedSlot(slotValue = 0) {
@@ -157,11 +176,15 @@ export function createWebhookRouter(
    * Triggers the full pipeline: research -> script -> video -> post
    */
   router.post('/generate-daily-reel', verifyWebhookSignature, async (req, res) => {
-    if (dailyGenerationInProgress) {
+    if (dailyGenerationInProgress && (Date.now() - generationStartedAt) < GENERATION_TIMEOUT_MS) {
       return res.status(429).json({ success: false, error: 'Daily generation already in progress' });
+    }
+    if (dailyGenerationInProgress) {
+      console.warn('[Webhook] Generation lock expired after 45 min — auto-clearing.');
     }
 
     dailyGenerationInProgress = true;
+    generationStartedAt = Date.now();
     const startTime = Date.now();
     let postData = null;
 
@@ -287,6 +310,18 @@ export function createWebhookRouter(
 
       console.log('[Webhook] Daily reel generation complete in', duration, 'ms');
 
+      await notifyPostOutcome({
+        status: instagramResult ? 'POST_SUCCESS' : 'POST_PARTIAL_SUCCESS',
+        subjectPrefix: 'Daily Reel',
+        details: {
+          topic: topic.topic,
+          instagramPostId: instagramResult?.postId || null,
+          youtubeVideoId: youtubeResult?.videoId || null,
+          durationMs: duration,
+          requestPath: req.originalUrl,
+        },
+      });
+
       return res.status(200).json({
         success: true,
         message: 'Daily reel generated and posted successfully',
@@ -322,6 +357,17 @@ export function createWebhookRouter(
         }
       }
 
+      await notifyPostOutcome({
+        status: 'POST_FAILED',
+        subjectPrefix: 'Daily Reel',
+        details: {
+          topic: postData?.topic || null,
+          error: error.message,
+          durationMs: duration,
+          requestPath: req.originalUrl,
+        },
+      });
+
       return res.status(500).json({
         success: false,
         error: error.message || 'Failed to generate daily reel',
@@ -339,11 +385,15 @@ export function createWebhookRouter(
    * 0 Historical fact, 1 India politics, 2 Geopolitics, 3 Technology.
    */
   router.post('/generate-themed-reel', verifyWebhookSignature, async (req, res) => {
-    if (dailyGenerationInProgress) {
+    if (dailyGenerationInProgress && (Date.now() - generationStartedAt) < GENERATION_TIMEOUT_MS) {
       return res.status(429).json({ success: false, error: 'Generation already in progress' });
+    }
+    if (dailyGenerationInProgress) {
+      console.warn('[Webhook] Generation lock expired after 45 min — auto-clearing.');
     }
 
     dailyGenerationInProgress = true;
+    generationStartedAt = Date.now();
     const startTime = Date.now();
 
     try {
@@ -358,7 +408,7 @@ export function createWebhookRouter(
       };
 
       const scriptData = await scriptAgent.generateScript(topicData, {
-        languageStyle: 'Hindi',
+        languageStyle: 'English',
         theme: slot.label,
         style: 'Honey-style factual explainer',
       });
@@ -413,6 +463,21 @@ export function createWebhookRouter(
       }
 
       const duration = Date.now() - startTime;
+
+      await notifyPostOutcome({
+        status: instagramResult ? 'POST_SUCCESS' : 'POST_PARTIAL_SUCCESS',
+        subjectPrefix: 'Themed Reel',
+        details: {
+          slotLabel: slot.label,
+          slotKey: slot.key,
+          topic: topicData.topic,
+          instagramPostId: instagramResult?.postId || null,
+          youtubeVideoId: youtubeResult?.videoId || null,
+          durationMs: duration,
+          requestPath: req.originalUrl,
+        },
+      });
+
       return res.status(200).json({
         success: true,
         message: 'Themed Hindi reel generated and posted',
@@ -432,6 +497,17 @@ export function createWebhookRouter(
       });
     } catch (error) {
       console.error('[Webhook] Error in themed reel generation:', error.message);
+
+      await notifyPostOutcome({
+        status: 'POST_FAILED',
+        subjectPrefix: 'Themed Reel',
+        details: {
+          error: error.message,
+          durationMs: Date.now() - startTime,
+          requestPath: req.originalUrl,
+        },
+      });
+
       return res.status(500).json({
         success: false,
         error: error.message || 'Failed to generate themed reel',

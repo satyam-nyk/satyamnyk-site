@@ -15,6 +15,7 @@ import YouTubeService from './services/youtube-service.js';
 import StockVideoService from './services/stock-video-service.js';
 import TTSService from './services/tts-service.js';
 import VideoCompositionService from './services/video-composition-service.js';
+import EmailNotifierService from './services/email-notifier-service.js';
 
 // Agents
 import ResearchAgent from './agents/research-agent.js';
@@ -55,6 +56,7 @@ let youtubeService = null;
 let stockVideoService = null;
 let ttsService = null;
 let compositionService = null;
+let emailNotifierService = null;
 let researchAgent = null;
 let scriptAgent = null;
 let videoAgent = null;
@@ -139,8 +141,14 @@ async function initializeServices() {
     stockVideoService = new StockVideoService();
     ttsService = new TTSService();
     compositionService = new VideoCompositionService();
+
+    // 8. Initialize optional email notifier service
+    emailNotifierService = new EmailNotifierService();
+    if (emailNotifierService.enabled && !emailNotifierService.isConfigured) {
+      console.warn('[Server] Email notifications enabled but SMTP config is incomplete');
+    }
     
-    // 8. Initialize VideoAgent with hybrid support
+    // 9. Initialize VideoAgent with hybrid support
     videoAgent = new VideoAgent(
       heygenService,
       database,
@@ -171,7 +179,8 @@ function setupRoutes() {
     scriptAgent,
     videoAgent,
     instagramService,
-    youtubeService
+    youtubeService,
+    emailNotifierService
   );
   app.use('/api/webhook', webhookRouter);
 
