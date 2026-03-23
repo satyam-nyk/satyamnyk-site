@@ -70,24 +70,97 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-/* gradient title */
-h1 { background: linear-gradient(90deg,#833ab4,#fd1d1d,#fcb045);
-     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-     font-size:2.4rem !important; }
+/* Global */
+html, body, [class*="css"] {
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
 
-/* metric cards */
-div[data-testid="stMetricValue"] { font-size:1.8rem; font-weight:700; }
+.stApp {
+    background:
+        radial-gradient(1000px 400px at 90% -10%, rgba(124, 58, 237, 0.2), transparent),
+        radial-gradient(900px 350px at -10% 25%, rgba(92, 200, 255, 0.14), transparent),
+        #060a12;
+}
 
-/* dataframe */
-div[data-testid="stDataFrame"] { border-radius:8px; overflow:hidden; }
+h1 {
+    background: linear-gradient(90deg, #8b5cf6, #ec4899, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.5rem !important;
+    margin-bottom: 0.25rem !important;
+}
 
-/* file-uploader border */
+/* Hero panel */
+.hero-panel {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin: 6px 0 14px 0;
+    background: linear-gradient(135deg, rgba(92, 200, 255, 0.08), rgba(124, 58, 237, 0.12));
+}
+
+.hero-panel p {
+    margin: 0;
+    color: #cad5f3;
+    font-size: 0.98rem;
+    line-height: 1.6;
+}
+
+/* Section headers */
+h3 {
+    margin-top: 0.35rem !important;
+}
+
+/* Metrics and cards */
+div[data-testid="stMetric"] {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+div[data-testid="stMetricValue"] {
+    font-size: 1.7rem;
+    font-weight: 750;
+}
+
+/* Dataframe */
+div[data-testid="stDataFrame"] {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* File uploader */
 div[data-testid="stFileUploader"] section {
-    border:2px dashed #833ab4; border-radius:12px; }
+    border: 2px dashed #8b5cf6;
+    border-radius: 14px;
+    background: rgba(139, 92, 246, 0.06);
+}
 
-/* sidebar */
-section[data-testid="stSidebar"] { background:#0d0d0d; }
-section[data-testid="stSidebar"] * { color:#eee; }
+/* Buttons */
+div[data-testid="stDownloadButton"] button {
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: #090d16;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+section[data-testid="stSidebar"] * {
+    color: #e7ecff;
+}
+
+/* Expanders */
+details {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 2px 10px;
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -130,8 +203,17 @@ Export your Instagram data to get started:
 # ─────────────────────────────────────────────
 st.title("📊 IG Reel Analytics")
 st.markdown(
-    "Upload your **Instagram data export** ZIP to see reel engagement stats "
-    "across your conversations."
+        """
+<div class="hero-panel">
+    <p>
+        Upload your <strong>Instagram data export ZIP</strong> to get a clean, objective breakdown of
+        reels sent, replies, reactions, and engagement across your conversations.
+        <br>
+        Built for one purpose: settle the reel debate with data.
+    </p>
+</div>
+""",
+        unsafe_allow_html=True,
 )
 
 # ─────────────────────────────────────────────

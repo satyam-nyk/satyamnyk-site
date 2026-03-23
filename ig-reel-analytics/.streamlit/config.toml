@@ -6,3 +6,9 @@ port = 8501
 
 [browser]
 gatherUsageStats = false
+
+[ui]
+hideTopBar = true
+
+[client]
+toolbarMode = "viewer"
