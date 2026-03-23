@@ -140,6 +140,26 @@ export function createWebhookRouter(
     return THEMED_CONTENT_SLOTS[normalized];
   }
 
+  function getRotationalRandomThemedSlot(runIndexValue = 0) {
+    const slotCount = THEMED_CONTENT_SLOTS.length;
+    if (slotCount === 0) {
+      return THEMED_CONTENT_SLOTS[0];
+    }
+
+    const today = new Date();
+    const dayNumber = Math.floor(Date.UTC(
+      today.getUTCFullYear(),
+      today.getUTCMonth(),
+      today.getUTCDate(),
+    ) / 86400000);
+    const runIndex = Number.isInteger(Number(runIndexValue)) ? Number(runIndexValue) : 0;
+    const rotationalIndex = ((dayNumber % slotCount) + runIndex) % slotCount;
+    const randomOffset = Math.floor(Math.random() * slotCount);
+    const selectedIndex = (rotationalIndex + randomOffset) % slotCount;
+
+    return THEMED_CONTENT_SLOTS[selectedIndex];
+  }
+
   /**
    * Middleware to verify webhook signature
    */
@@ -238,7 +258,9 @@ export function createWebhookRouter(
 
       // Step 2: Generate Script
       console.log('[Webhook] Step 2: Generating script...');
-      const scriptData = await scriptAgent.generateScript(topic);
+      const scriptData = await scriptAgent.generateScript(topic, {
+        languageStyle: 'English',
+      });
       if (!scriptData) {
         throw new Error('Failed to generate script');
       }
@@ -380,8 +402,8 @@ export function createWebhookRouter(
   });
 
   /**
-   * POST /api/webhook/generate-themed-reel
-    * Generate and post one Hindi reel for a specific content slot:
+  * POST /api/webhook/generate-themed-reel
+   * Generate and post one English reel for a specific content slot:
    * 0 Historical fact, 1 India politics, 2 Geopolitics, 3 Technology.
    */
   router.post('/generate-themed-reel', verifyWebhookSignature, async (req, res) => {
@@ -397,7 +419,11 @@ export function createWebhookRouter(
     const startTime = Date.now();
 
     try {
-      const slot = getThemedSlot(req.query.slot ?? req.body?.slot ?? 0);
+      const mode = String(req.query.mode ?? req.body?.mode ?? '').toLowerCase();
+      const runIndex = req.query.runIndex ?? req.body?.runIndex ?? 0;
+      const slot = mode === 'rotational-random'
+        ? getRotationalRandomThemedSlot(runIndex)
+        : getThemedSlot(req.query.slot ?? req.body?.slot ?? 0);
       const today = new Date().toISOString().split('T')[0];
       const themedTopic = await researchAgent.researchTopicByTheme(slot.prompt);
 
@@ -480,7 +506,7 @@ export function createWebhookRouter(
 
       return res.status(200).json({
         success: true,
-        message: 'Themed Hindi reel generated and posted',
+        message: 'Themed English reel generated and posted',
         data: {
           slot: slot.id,
           slotKey: slot.key,

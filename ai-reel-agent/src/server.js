@@ -62,6 +62,41 @@ let scriptAgent = null;
 let videoAgent = null;
 let dailySchedulerTimeout = null;
 
+function createDeterministicRng(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function getDateSeed(date) {
+  const y = date.getUTCFullYear();
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate();
+  return Number(`${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`);
+}
+
+function getDailyPostMix(hoursCount, date) {
+  const safeCount = Math.max(1, Number(hoursCount) || 4);
+  const videoCount = Math.floor(safeCount / 2);
+  const staticCount = safeCount - videoCount;
+  const mix = [
+    ...Array(videoCount).fill('video'),
+    ...Array(staticCount).fill('static'),
+  ];
+
+  const rng = createDeterministicRng(getDateSeed(date));
+  for (let i = mix.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [mix[i], mix[j]] = [mix[j], mix[i]];
+  }
+
+  return mix;
+}
+
 function getDailySchedulerHours() {
   const envRaw = process.env.DAILY_POST_TIMES_UTC || '';
   const source = envRaw
@@ -318,8 +353,11 @@ function scheduleNextDailyRun() {
   }
 
   const delay = nextRun.getTime() - now.getTime();
+  const dailyPostMix = getDailyPostMix(hours.length, nextRun);
+  const nextPostType = dailyPostMix[nextSlotIndex] || 'video';
   console.log(`[Server] Auto scheduler hours (UTC): ${hours.join(', ')}`);
-  console.log(`[Server] Next reel scheduler run at ${nextRun.toISOString()} (slot ${nextSlotIndex})`);
+  console.log(`[Server] Daily post mix for ${nextRun.toISOString().split('T')[0]}: ${dailyPostMix.join(', ')}`);
+  console.log(`[Server] Next reel scheduler run at ${nextRun.toISOString()} (slot ${nextSlotIndex}, type ${nextPostType})`);
 
   clearTimeout(dailySchedulerTimeout);
   dailySchedulerTimeout = setTimeout(async () => {
@@ -329,12 +367,16 @@ function scheduleNextDailyRun() {
         headers.Authorization = `Bearer ${process.env.WEBHOOK_SECRET}`;
       }
 
-      const response = await fetch(`http://127.0.0.1:${PORT}/api/webhook/generate-themed-reel?slot=${nextSlotIndex}`, {
+      const endpoint = nextPostType === 'static'
+        ? '/api/webhook/generate-static-current-affairs'
+        : `/api/webhook/generate-themed-reel?mode=rotational-random&runIndex=${nextSlotIndex}`;
+
+      const response = await fetch(`http://127.0.0.1:${PORT}${endpoint}`, {
         method: 'POST',
         headers,
       });
       const data = await response.json();
-      console.log('[Server] Daily scheduler response:', JSON.stringify(data));
+      console.log('[Server] Daily scheduler response:', JSON.stringify({ postType: nextPostType, ...data }));
     } catch (error) {
       console.error('[Server] Daily scheduler error:', error.message);
     } finally {
