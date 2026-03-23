@@ -1,3 +1,10 @@
 ai-reel-agent-hostinger-upload.zip
 ai-reel-agent-public-hotfix.zip
 database.sqlite
+
+# Python virtual environments and local artifacts
+.venv/
+**/.venv/
+*.pyc
+__pycache__/
+*.log
