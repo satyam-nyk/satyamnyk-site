@@ -189,56 +189,95 @@ body {
   color: var(--muted);
 }
 
-.story-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+.debate-scene {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
 }
 
-.story-card {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 16px;
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 72%;
 }
 
-.story-card-after {
-  border-color: rgba(73, 212, 255, 0.38);
-  background: linear-gradient(135deg, rgba(73, 212, 255, 0.08), rgba(122, 72, 255, 0.08));
+.bubble-left {
+  align-self: flex-start;
 }
 
-.story-label {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.78rem;
+.bubble-right {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.bubble-name {
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #c8f4ff;
-  border: 1px solid rgba(73, 212, 255, 0.45);
-  background: rgba(73, 212, 255, 0.12);
-  margin-bottom: 10px;
-}
-
-.story-card h3 {
-  margin: 0 0 8px;
-  font-size: 1.15rem;
-  line-height: 1.35;
-}
-
-.story-card p {
-  margin: 0 0 12px;
+  letter-spacing: 0.05em;
   color: var(--muted);
+  padding: 0 4px;
 }
 
-.story-card img {
+.bubble-text {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 0.97rem;
+  line-height: 1.5;
+}
+
+.bubble-left .bubble-text {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+  color: var(--text);
+}
+
+.bubble-right .bubble-text {
+  background: linear-gradient(135deg, rgba(73, 212, 255, 0.18), rgba(122, 72, 255, 0.18));
+  border: 1px solid rgba(73, 212, 255, 0.3);
+  border-bottom-right-radius: 4px;
+  color: var(--text);
+}
+
+.verdict-drop {
+  align-self: stretch;
+  margin-top: 14px;
+  border: 1px solid rgba(73, 212, 255, 0.38);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(73, 212, 255, 0.07), rgba(122, 72, 255, 0.07));
+  padding: 18px;
+  max-width: 100%;
+}
+
+.verdict-label {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8fe8ff;
+  margin-bottom: 6px;
+}
+
+.verdict-drop h3 {
+  margin: 0 0 14px;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  font-family: 'Sora', sans-serif;
+}
+
+.verdict-drop img {
   width: 100%;
   display: block;
   border-radius: 12px;
   border: 1px solid var(--line);
   aspect-ratio: 16 / 9;
-  object-fit: cover;
+  object-fit: contain;
+  background: #040915;
 }
 
 .gallery {
