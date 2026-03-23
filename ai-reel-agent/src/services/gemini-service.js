@@ -489,7 +489,7 @@ Requirements:
         languageStyle
           ? wantsHindi
             ? `- Language style: ${languageStyle}. Write the full narration in natural conversational Hindi using Devanagari script only. Keep the wording simple, clear, and spoken, without Roman-script Hinglish.`
-            : `- Language style: ${languageStyle}. Use natural conversational Hinglish (Hindi + English mix in Roman script), avoid overly formal tone and avoid difficult words.`
+            : `- Language style: ${languageStyle}. Write the full narration in clear conversational English only. Do not use Hindi words, Hinglish, or Devanagari script.`
           : '',
         theme
           ? `- Keep content strictly within theme: ${theme}`
@@ -504,7 +504,7 @@ Requirements:
         '- Each fact must answer at least one of: what changed, why now, who is affected, what to do next.',
         wantsHindi
           ? '- If a point is uncertain, clearly say "रिपोर्ट्स के अनुसार" or "सार्वजनिक जानकारी के आधार पर".'
-          : '- If a point is uncertain, clearly say "reports ke mutabik" or "public reports ke basis par".',
+          : '- If a point is uncertain, clearly say "according to reports" or "based on public reports".',
         '- Use a clean explainer flow: Hook -> Context -> 3 clear facts -> Why it matters -> Actionable takeaway -> CTA.',
         '- Avoid sensational words like "shocking", "mind-blowing", "guaranteed" unless factually justified.',
       ]
@@ -571,7 +571,7 @@ Today context: ${new Date().toISOString().split('T')[0]}
 Return STRICT valid JSON only, minified, no markdown, no trailing commas.
 Schema:
 {
-  "script": "${wantsHindi ? 'Natural spoken Hindi in Devanagari' : 'Natural spoken Hinglish'} with concrete facts and practical value",
+  "script": "${wantsHindi ? 'Natural spoken Hindi in Devanagari' : 'Natural spoken English'} with concrete facts and practical value",
   "duration": ${target},
   "hook": "short opening hook",
   "cta": "short CTA",
@@ -583,7 +583,7 @@ Rules:
 - Mention at least 3 concrete facts and why they matter now
 - Avoid stale framing; treat years older than ${new Date().getUTCFullYear() - 1} as historical context only
 - Do not invent unverifiable numbers
-- If numeric data is uncertain, use qualitative wording (e.g., "तेज़", "उच्च क्षमता", "प्रारंभिक चरण") instead of exact figures
+- If numeric data is uncertain, use qualitative wording (e.g., "rapid", "high capacity", "early stage") instead of exact figures
 - Keep duration between ${min}-${max} seconds`;
 
             const compactContent = await this.callMistral(compactPrompt, {
