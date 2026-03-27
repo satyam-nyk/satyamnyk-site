@@ -116,7 +116,8 @@ class InstagramService {
     }
   }
 
-  async postStaticCurrentAffairs(summaryText, topic = 'Current Affairs') {
+  async postStaticCurrentAffairs(summaryText, topic = 'Current Affairs', retryCount = 0) {
+    const MAX_RETRIES = 3;
     try {
       const text = String(summaryText || '').trim();
       if (!text) {
@@ -157,6 +158,9 @@ class InstagramService {
 
       await this.apiLimiter.consumeLimit('INSTAGRAM', 1);
 
+      // Wait for Instagram to finish processing the image (same as reels)
+      await this.waitForMediaProcessing(mediaId);
+
       const publishResponse = await axios.post(
         `${this.baseURL}/${this.businessAccountId}/media_publish`,
         {
@@ -180,6 +184,18 @@ class InstagramService {
         console.error('[InstagramService] Static post API error details:', JSON.stringify(error.response.data));
       }
       console.error('[InstagramService] Error posting static current affairs:', error.message);
+
+      // Retry on transient network errors
+      const isTransient = error.code === 'ECONNRESET' || error.code === 'ENOTFOUND' ||
+        error.message?.includes('fetch failed') || error.message?.includes('timeout') ||
+        error.message?.includes('ECONNABORTED');
+      if (isTransient && retryCount < MAX_RETRIES) {
+        const backoff = Math.pow(2, retryCount) * 3000;
+        console.warn(`[InstagramService] Static post transient error, retrying in ${backoff}ms (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+        await new Promise(resolve => setTimeout(resolve, backoff));
+        return this.postStaticCurrentAffairs(summaryText, topic, retryCount + 1);
+      }
+
       throw error;
     }
   }

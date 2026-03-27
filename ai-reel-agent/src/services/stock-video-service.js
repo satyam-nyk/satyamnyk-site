@@ -259,26 +259,35 @@ class StockVideoService {
 
   /**
    * Download and cache video file
-   * For production: would download to ./videos/ directory
+   * Retries up to 3 times with a 120-second timeout per attempt to handle large Pexels files.
    */
   async downloadVideo(videoUrl, videoId) {
-    try {
-      console.log('[StockVideoService] Downloading video:', videoId);
-      if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
-        return {
-          fileName: path.basename(videoUrl),
-          videoPath: videoUrl,
-          videoUrl,
-        };
-      }
+    const DOWNLOAD_TIMEOUT = 120000; // 120s — Pexels files can be 50-200MB
+    const MAX_RETRIES = 3;
 
-      const safeId = String(videoId || 'stock_video').replace(/[^a-z0-9_-]/gi, '_');
-      const outputPath = path.join(this.stockDir, `${safeId}.mp4`);
+    console.log('[StockVideoService] Downloading video:', videoId);
 
-      if (!fs.existsSync(outputPath)) {
+    if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
+      return {
+        fileName: path.basename(videoUrl),
+        videoPath: videoUrl,
+        videoUrl,
+      };
+    }
+
+    const safeId = String(videoId || 'stock_video').replace(/[^a-z0-9_-]/gi, '_');
+    const outputPath = path.join(this.stockDir, `${safeId}.mp4`);
+
+    if (fs.existsSync(outputPath)) {
+      return { fileName: `${safeId}.mp4`, videoPath: outputPath, videoUrl };
+    }
+
+    let lastError;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
         const response = await axios.get(videoUrl, {
           responseType: 'arraybuffer',
-          timeout: this.timeout * 3,
+          timeout: DOWNLOAD_TIMEOUT,
           headers: {
             'User-Agent': 'Mozilla/5.0',
             Referer: 'https://www.pexels.com/',
@@ -286,17 +295,18 @@ class StockVideoService {
           maxRedirects: 5,
         });
         fs.writeFileSync(outputPath, Buffer.from(response.data));
+        return { fileName: `${safeId}.mp4`, videoPath: outputPath, videoUrl };
+      } catch (error) {
+        lastError = error;
+        console.warn(`[StockVideoService] Download attempt ${attempt}/${MAX_RETRIES} failed: ${error.message}`);
+        if (attempt < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, attempt * 3000));
+        }
       }
-      
-      return {
-        fileName: `${safeId}.mp4`,
-        videoPath: outputPath,
-        videoUrl: videoUrl,
-      };
-    } catch (error) {
-      console.error('[StockVideoService] Error downloading video:', error.message);
-      throw error;
     }
+
+    console.error('[StockVideoService] Error downloading video:', lastError.message);
+    throw lastError;
   }
 }
 

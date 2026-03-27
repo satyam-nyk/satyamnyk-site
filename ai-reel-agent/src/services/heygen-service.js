@@ -30,14 +30,11 @@ class HeyGenService {
         return null;
       }
 
-      // Estimate credits needed
+      // NOTE: monthlyData.remaining is video count (e.g. 10/month plan), not credits.
+      // estimateCreditsNeeded returns a credit value — comparing these is a unit mismatch.
+      // The quota guard above (remaining <= 0) is sufficient; skip the credit comparison.
       const estimatedCredits = this.estimateCreditsNeeded(script);
-      if (estimatedCredits > monthlyData.remaining) {
-        console.warn(
-          `[HeyGenService] Insufficient credits. Need ${estimatedCredits}, have ${monthlyData.remaining}`
-        );
-        return null;
-      }
+      console.log(`[HeyGenService] Estimated credits: ${estimatedCredits}, videos remaining this month: ${monthlyData.remaining}`);
 
       const payload = {
         video_inputs: [
