@@ -19,14 +19,16 @@ export async function publishToDevto(input: PublishToDevtoInput) {
   }
 
   const markdownBody = turndown.turndown(input.htmlContent);
+  // Use tag_list as space-separated string (max 4 tags per dev.to API)
+  const tagList = input.tags.slice(0, 4).join(" ");
 
   const { data } = await axios.post(
-    "https://dev.to/api/articles",
+      "https://dev.to/api/articles",
     {
       article: {
         title: input.title,
         body_markdown: markdownBody,
-        tags: input.tags.slice(0, 4),
+        tag_list: tagList,
         published: Boolean(input.published),
         canonical_url: input.canonicalUrl,
       },

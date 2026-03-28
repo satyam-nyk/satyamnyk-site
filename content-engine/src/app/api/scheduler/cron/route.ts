@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
       articleLinks: result.articleLinks ?? [],
       emailSent: result.emailSent ?? false,
       emailError: result.emailError,
+      devtoPublished: result.devtoPublished ?? 0,
+      devtoErrors: result.devtoErrors ?? [],
       themeSlot,
       message: result.error || `Auto-batch completed successfully (theme: ${themeSlot})`,
     });
