@@ -44,6 +44,8 @@ interface ScheduleResult {
   articleLinks?: string[];
   emailSent?: boolean;
   emailError?: string;
+  devtoPublished?: number;
+  devtoErrors?: string[];
   error?: string;
 }
 
@@ -329,6 +331,8 @@ class BlogScheduler {
 
       let articlesGenerated = 0;
       let articlesPublished = 0;
+      let devtoPublished = 0;
+      const devtoErrors: string[] = [];
       const articleLinks: string[] = [];
       const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://blog.satyamnyk.com").trim();
 
@@ -399,13 +403,15 @@ class BlogScheduler {
                 canonicalUrl: `${siteUrl}/blog/${article.slug}`,
                 published: true,
               });
-              articlesPublished++;
+              devtoPublished++;
+              console.log(`[BlogScheduler] Published to Dev.to: ${article.title}`);
             } catch (devtoError) {
-              console.error("[BlogScheduler] Dev.to publish failed:", devtoError);
+              const errorMsg = devtoError instanceof Error ? devtoError.message : String(devtoError);
+              console.error("[BlogScheduler] Dev.to publish failed:", errorMsg);
+              devtoErrors.push(`${article.title}: ${errorMsg}`);
             }
-          } else {
-            articlesPublished++;
           }
+          articlesPublished++;
         } catch (topicError) {
           console.error(`[BlogScheduler] Failed to process topic "${idea.baseTopic}":`, topicError);
           continue;
@@ -419,6 +425,8 @@ class BlogScheduler {
         articlesPublished,
         duration,
         articleLinks,
+        devtoPublished,
+        ...(devtoErrors.length > 0 && { devtoErrors }),
       };
 
       const emailResult = await this.sendEmail("SUCCESS", result);
@@ -434,6 +442,7 @@ class BlogScheduler {
         articlesPublished: 0,
         duration,
         articleLinks: [],
+        devtoPublished: 0,
         error: errorMsg,
       };
 
