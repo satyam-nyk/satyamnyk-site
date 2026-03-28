@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f7f9;
+  --foreground: #101113;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+article h1,
+article h2,
+article h3 {
+  margin-top: 1.2em;
+  margin-bottom: 0.45em;
+  line-height: 1.2;
+}
+
+article p,
+article li {
+  color: #2d3138;
+  line-height: 1.75;
+}
+
+article ul,
+article ol {
+  margin-left: 1.3rem;
+  margin-bottom: 1rem;
+}
