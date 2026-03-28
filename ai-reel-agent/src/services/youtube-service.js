@@ -194,8 +194,6 @@ class YouTubeService {
       throw new Error('YouTube title is required');
     }
 
-    const token = await this.refreshAccessToken();
-
     if (this.apiLimiter && !(await this.apiLimiter.canMakeRequest('YOUTUBE'))) {
       throw new Error('YouTube API quota limit reached in local limiter');
     }
@@ -203,67 +201,121 @@ class YouTubeService {
     const stat = fs.statSync(videoPath);
     const mimeType = path.extname(videoPath).toLowerCase() === '.mov' ? 'video/quicktime' : 'video/mp4';
 
-    const initiate = await axios.post(
-      'https://www.googleapis.com/upload/youtube/v3/videos',
-      {
-        snippet: {
-          title: String(title).slice(0, 100),
-          description: String(description).slice(0, 5000),
-          tags: Array.isArray(tags) ? tags.slice(0, 20) : [],
-          categoryId: String(categoryId),
-        },
-        status: {
-          privacyStatus,
-          selfDeclaredMadeForKids: false,
-        },
-      },
-      {
-        params: {
-          uploadType: 'resumable',
-          part: 'snippet,status',
-        },
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json; charset=UTF-8',
-          'X-Upload-Content-Length': String(stat.size),
-          'X-Upload-Content-Type': mimeType,
-        },
-        timeout: this.timeout,
+    const maxRetries = Number(process.env.YOUTUBE_UPLOAD_MAX_RETRIES || 3);
+    let useMinimalMetadata = false;
+    let lastError = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const token = await this.refreshAccessToken();
+        const payload = {
+          snippet: useMinimalMetadata
+            ? {
+              title: String(title).slice(0, 100),
+              description: '',
+              tags: ['shorts'],
+              categoryId: String(categoryId),
+            }
+            : {
+              title: String(title).slice(0, 100),
+              description: String(description).slice(0, 5000),
+              tags: Array.isArray(tags) ? tags.slice(0, 20) : [],
+              categoryId: String(categoryId),
+            },
+          status: {
+            privacyStatus,
+            selfDeclaredMadeForKids: false,
+          },
+        };
+
+        const initiate = await axios.post(
+          'https://www.googleapis.com/upload/youtube/v3/videos',
+          payload,
+          {
+            params: {
+              uploadType: 'resumable',
+              part: 'snippet,status',
+            },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json; charset=UTF-8',
+              'X-Upload-Content-Length': String(stat.size),
+              'X-Upload-Content-Type': mimeType,
+            },
+            timeout: this.timeout * 2,
+          },
+        );
+
+        const uploadUrl = initiate.headers.location;
+        if (!uploadUrl) {
+          throw new Error('YouTube resumable upload URL not returned');
+        }
+
+        const videoBuffer = fs.readFileSync(videoPath);
+        const uploadResponse = await axios.put(uploadUrl, videoBuffer, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Length': stat.size,
+            'Content-Type': mimeType,
+          },
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          timeout: 0,
+        });
+
+        if (this.apiLimiter) {
+          await this.apiLimiter.consumeLimit('YOUTUBE', 1);
+        }
+
+        const videoId = uploadResponse.data?.id;
+        if (!videoId) {
+          throw new Error('YouTube upload succeeded but no video ID returned');
+        }
+
+        return {
+          videoId,
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          status: 'uploaded',
+          uploadedAt: new Date().toISOString(),
+        };
+      } catch (error) {
+        lastError = error;
+        const status = error.response?.status;
+        const details = error.response?.data ? JSON.stringify(error.response.data) : '';
+        if (details) {
+          console.warn('[YouTubeService] Upload error details:', details);
+        }
+
+        if (status === 400 && !useMinimalMetadata) {
+          useMinimalMetadata = true;
+          console.warn('[YouTubeService] Retrying with minimal metadata after HTTP 400');
+          continue;
+        }
+
+        const transient = this.isTransientError(error);
+        if (!transient || attempt === maxRetries) {
+          break;
+        }
+
+        const delayMs = Math.pow(2, attempt) * 2000;
+        console.warn(`[YouTubeService] Upload retry ${attempt}/${maxRetries} in ${delayMs}ms: ${error.message}`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
       }
-    );
-
-    const uploadUrl = initiate.headers.location;
-    if (!uploadUrl) {
-      throw new Error('YouTube resumable upload URL not returned');
     }
 
-    const videoBuffer = fs.readFileSync(videoPath);
-    const uploadResponse = await axios.put(uploadUrl, videoBuffer, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Length': stat.size,
-        'Content-Type': mimeType,
-      },
-      maxBodyLength: Infinity,
-      maxContentLength: Infinity,
-      timeout: 0,
-    });
+    throw lastError || new Error('YouTube upload failed');
+  }
 
-    if (this.apiLimiter) {
-      await this.apiLimiter.consumeLimit('YOUTUBE', 1);
-    }
+  isTransientError(error) {
+    const status = Number(error?.response?.status || 0);
+    const code = String(error?.code || '').toUpperCase();
+    const message = String(error?.message || '').toLowerCase();
 
-    const videoId = uploadResponse.data?.id;
-    if (!videoId) {
-      throw new Error('YouTube upload succeeded but no video ID returned');
-    }
+    if (status >= 500 || status === 429) return true;
+    if (['ECONNRESET', 'ETIMEDOUT', 'ECONNABORTED', 'ENOTFOUND', 'EAI_AGAIN'].includes(code)) return true;
+    if (message.includes('timeout') || message.includes('socket hang up') || message.includes('network')) return true;
 
-    return {
-      videoId,
-      url: `https://www.youtube.com/watch?v=${videoId}`,
-      status: 'uploaded',
-      uploadedAt: new Date().toISOString(),
-    };
+    return false;
   }
 
   async getRecentUploads(limit = 25, accessToken = null) {

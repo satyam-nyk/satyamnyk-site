@@ -1,13 +1,15 @@
 ## 🚀 RAILWAY DEPLOYMENT GUIDE
 
-### Step 1: Create GitHub Repository
-
-```bash
-cd /Users/lenovo/Downloads/satyamnyk-site/ai-reel-agent
+GOOGLE_GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+HEYGEN_API_KEY=YOUR_HEYGEN_API_KEY
+INSTAGRAM_ACCESS_TOKEN=YOUR_INSTAGRAM_ACCESS_TOKEN
+INSTAGRAM_BUSINESS_ACCOUNT_ID=YOUR_NUMERIC_ID_HERE
+AIVIDEOAPI_ENABLED=true
+AIVIDEOAPI_KEY=YOUR_AIVIDEOAPI_KEY
 
 # Initialize git
 git init
-
+WEBHOOK_SECRET=YOUR_RANDOM_WEBHOOK_SECRET
 # Add all files (except those in .gitignore)
 git add .
 
@@ -74,7 +76,7 @@ For GitHub Actions to trigger the webhook:
 
 ```
 WEBHOOK_URL=https://YOUR-APP.railway.app/api/webhook/generate-daily-reel
-WEBHOOK_SECRET=b1e716fac616b3b37317995dee80b91995d25305ebbe30a21a0db54ddd217d84
+WEBHOOK_SECRET=YOUR_RANDOM_WEBHOOK_SECRET
 ```
 
 3. Replace `YOUR-APP` with your Railway app name

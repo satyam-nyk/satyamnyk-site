@@ -4,13 +4,22 @@
  * Priority: HeyGen if quota available → Stock Videos if HeyGen exhausted → Cache fallback
  */
 class VideoAgent {
-  constructor(heygenService, database, apiLimiter, stockVideoService = null, ttsService = null, compositionService = null) {
+  constructor(
+    heygenService,
+    database,
+    apiLimiter,
+    stockVideoService = null,
+    aiVideoAPIService = null,
+    ttsService = null,
+    compositionService = null,
+  ) {
     this.heygenService = heygenService;
     this.db = database;
     this.apiLimiter = apiLimiter;
     
     // New free-tier services
     this.stockVideoService = stockVideoService;
+    this.aiVideoAPIService = aiVideoAPIService;
     this.ttsService = ttsService;
     this.compositionService = compositionService;
     this.preferredGenerator = process.env.PREFERRED_VIDEO_GENERATOR || 'stock';
@@ -55,9 +64,16 @@ class VideoAgent {
         if (result) return result;
       }
 
-      // STRATEGY 3: Fall back to cache
+      // STRATEGY 3: Fall back to AIVideoAPI Runway text-to-video
+      if (this.aiVideoAPIService?.isConfigured?.()) {
+        console.log('[VideoAgent] ⚠️  Tier 3: Switching to AIVideoAPI Runway fallback');
+        result = await this.generateWithAIVideoAPI(script);
+        if (result) return result;
+      }
+
+      // STRATEGY 4: Fall back to cache
       if (this.reuseEnabled) {
-        console.log('[VideoAgent] ⚠️  Tier 3: Attempting cache fallback');
+        console.log('[VideoAgent] ⚠️  Tier 4: Attempting cache fallback');
         result = await this.reuseOldVideo();
         if (result) return result;
       }
@@ -66,6 +82,91 @@ class VideoAgent {
     } catch (error) {
       console.error('[VideoAgent] ❌ Error generating video:', error.message);
       throw error;
+    }
+  }
+
+  async generateWithAIVideoAPI(script = null) {
+    try {
+      if (!this.aiVideoAPIService?.isConfigured?.()) {
+        return null;
+      }
+
+      console.log('[VideoAgent] 🎥 [TIER 3] Starting AIVideoAPI Runway generation...');
+
+      let payload = script;
+      if (!payload) {
+        const queuedScript = await this.db.getQueuedScript();
+        if (!queuedScript) {
+          console.log('[VideoAgent] No script for AIVideoAPI generation');
+          return null;
+        }
+        payload = {
+          script: queuedScript.script,
+          videoPrompt: queuedScript.hooks?.videoPrompt || queuedScript.topic,
+          scenes: queuedScript.hooks?.scenes || null,
+        };
+      }
+
+      const scriptText = typeof payload === 'string' ? payload : payload.script;
+      const videoPrompt = typeof payload === 'string' ? payload : payload.videoPrompt;
+      const scenes = this.normalizeScenes(scriptText, payload?.scenes);
+      const topic = (scriptText || '').substring(0, 70) || 'AI generated update';
+
+      const runwayPrompt = String(videoPrompt || scenes?.[0]?.visualPrompt || topic).slice(0, 500);
+      const generated = await this.aiVideoAPIService.generateTextVideo(runwayPrompt);
+      const downloaded = await this.stockVideoService.downloadVideo(generated.videoUrl, `runway_${generated.uuid}`);
+
+      const audioData = this.ttsService
+        ? await this.ttsService.generateSceneAudio(scenes)
+        : { audioPath: null, scriptText, duration: 90, scenes };
+
+      const components = this.compositionService.prepareComponents(
+        {
+          videoPath: downloaded.videoPath,
+          videoUrl: downloaded.videoPath,
+          videoId: `runway_${generated.uuid}`,
+          title: 'Runway Generated Clip',
+          duration: 90,
+        },
+        { script: scriptText, scenes, videoPrompt: runwayPrompt },
+        audioData,
+        topic,
+        new Date().toISOString().split('T')[0],
+      );
+
+      components.videoSources = [
+        {
+          videoPath: downloaded.videoPath,
+          videoUrl: downloaded.videoPath,
+          videoId: `runway_${generated.uuid}`,
+          source: 'aivideoapi-runway',
+        },
+      ];
+      components.scenes = audioData.scenes?.length ? audioData.scenes : scenes;
+
+      const reel = await this.compositionService.composeReel(components);
+
+      await this.db.cacheResult('video', {
+        file: `${reel.videoId}.mp4`,
+        url: reel.videoUrl,
+        topic,
+        method: 'runway-aivideoapi-free',
+      });
+
+      return {
+        videoPath: reel.videoPath,
+        videoId: reel.videoId,
+        videoUrl: reel.videoUrl,
+        generator: 'runway-aivideoapi-free',
+        duration: reel.duration || 90,
+        quality: reel.quality || '1080x1920',
+        tier: 3,
+        composition: reel.composition,
+        scenes: components.scenes,
+      };
+    } catch (error) {
+      console.error('[VideoAgent] ❌ AIVideoAPI generation failed:', error.message);
+      return null;
     }
   }
 
@@ -365,6 +466,10 @@ class VideoAgent {
           status: cacheStats.total_cached > 0 ? '✅ Available' : '❌ Empty',
           cachedVideos: cacheStats.total_cached,
           totalReuses: cacheStats.total_reuses,
+        },
+        tier3_aivideoapi: {
+          status: this.aiVideoAPIService?.isConfigured?.() ? '✅ Available' : '❌ Disabled',
+          provider: 'Runway via AIVideoAPI',
         },
         timestamp: new Date().toISOString(),
       };

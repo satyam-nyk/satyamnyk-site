@@ -13,6 +13,7 @@ import HeyGenService from './services/heygen-service.js';
 import InstagramService from './services/instagram-service.js';
 import YouTubeService from './services/youtube-service.js';
 import StockVideoService from './services/stock-video-service.js';
+import AIVideoAPIService from './services/aivideoapi-service.js';
 import TTSService from './services/tts-service.js';
 import VideoCompositionService from './services/video-composition-service.js';
 import EmailNotifierService from './services/email-notifier-service.js';
@@ -54,6 +55,7 @@ let heygenService = null;
 let instagramService = null;
 let youtubeService = null;
 let stockVideoService = null;
+let aiVideoAPIService = null;
 let ttsService = null;
 let compositionService = null;
 let emailNotifierService = null;
@@ -174,6 +176,12 @@ async function initializeServices() {
     // 7. Initialize free-tier hybrid video services
     console.log('[Server] Initializing free-tier video services...');
     stockVideoService = new StockVideoService();
+    aiVideoAPIService = new AIVideoAPIService();
+    if (aiVideoAPIService.isConfigured()) {
+      console.log('[Server] AIVideoAPI fallback enabled');
+    } else {
+      console.log('[Server] AIVideoAPI fallback disabled (set AIVIDEOAPI_ENABLED=true and AIVIDEOAPI_KEY)');
+    }
     ttsService = new TTSService();
     compositionService = new VideoCompositionService();
 
@@ -189,6 +197,7 @@ async function initializeServices() {
       database,
       apiLimiter,
       stockVideoService,
+      aiVideoAPIService,
       ttsService,
       compositionService
     );
