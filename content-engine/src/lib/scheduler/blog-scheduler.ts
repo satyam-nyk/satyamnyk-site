@@ -195,7 +195,7 @@ class BlogScheduler {
       }
     }
 
-    if (this.config.resendApiKey && this.config.resendAudience?.length) {
+    if (this.config.resendApiKey && this.config.emailTo?.length) {
       try {
         const emailBody = [
           `Status: ${status}`,
@@ -213,7 +213,7 @@ class BlogScheduler {
           },
           body: JSON.stringify({
             from: this.config.emailFrom,
-            to: this.config.resendAudience,
+            to: this.config.emailTo,
             subject: `[AI Product Signals Auto-Blog] ${status}`,
             text: emailBody,
           }),
