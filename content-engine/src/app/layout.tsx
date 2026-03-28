@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
+import MobileMenu from "@/components/MobileMenu";
 import { blogTheme } from "@/lib/config/blogTheme";
 
 import "./globals.css";
@@ -37,7 +38,9 @@ export default function RootLayout({
             <Link href="/" className="text-lg font-semibold tracking-tight text-zinc-950">
               {blogTheme.publicationName}
             </Link>
-            <div className="flex items-center gap-5 text-sm text-zinc-700">
+            
+            {/* Desktop Navigation */}
+            <div className="hidden items-center gap-5 text-sm text-zinc-700 md:flex">
               <Link href="/" className="hover:text-zinc-950">
                 Home
               </Link>
@@ -51,6 +54,9 @@ export default function RootLayout({
                 History + Lessons
               </Link>
             </div>
+
+            {/* Mobile Navigation */}
+            <MobileMenu />
           </nav>
         </header>
         <div className="flex min-h-[calc(100vh-73px)] flex-col">{children}</div>

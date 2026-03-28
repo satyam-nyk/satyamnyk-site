@@ -30,6 +30,8 @@ interface SchedulerConfig {
   emailTo?: string[];
   relayUrl?: string;
   relaySecret?: string;
+  resendApiKey?: string;
+  resendAudience?: string[];
   articlesPerRun: number;
   publishToDevto: boolean;
 }
@@ -70,6 +72,13 @@ class BlogScheduler {
         String(process.env.EMAIL_TO ?? "").split(",").map(e => e.trim()).filter(Boolean),
       relayUrl: config?.relayUrl ?? process.env.REEL_AGENT_EMAIL_RELAY_URL,
       relaySecret: config?.relaySecret ?? process.env.REEL_AGENT_WEBHOOK_SECRET,
+      resendApiKey: (config?.resendApiKey ?? process.env.RESEND_API_KEY ?? "").trim(),
+      resendAudience:
+        config?.resendAudience ??
+        String(process.env.RESEND_TO ?? process.env.EMAIL_TO ?? "")
+          .split(",")
+          .map((e) => e.trim())
+          .filter(Boolean),
       articlesPerRun: config?.articlesPerRun ?? 3,
       publishToDevto: config?.publishToDevto ?? blogTheme.settings.publishToDevtoByDefault,
     };
@@ -186,10 +195,51 @@ class BlogScheduler {
       }
     }
 
+    if (this.config.resendApiKey && this.config.resendAudience?.length) {
+      try {
+        const emailBody = [
+          `Status: ${status}`,
+          `Timestamp (UTC): ${new Date().toISOString()}`,
+          ...lines,
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.config.resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: this.config.emailFrom,
+            to: this.config.resendAudience,
+            subject: `[AI Product Signals Auto-Blog] ${status}`,
+            text: emailBody,
+          }),
+        });
+
+        if (response.ok) {
+          return { sent: true };
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        return {
+          sent: false,
+          error: String(payload.message || payload.error || `Resend request failed with status ${response.status}`),
+        };
+      } catch (error) {
+        return {
+          sent: false,
+          error: error instanceof Error ? error.message : "Resend request failed",
+        };
+      }
+    }
+
     if (!this.transporter || !this.config.emailTo?.length) {
       return {
         sent: false,
-        error: "Email notifications not configured. Missing REEL_AGENT_EMAIL_RELAY_URL or local SMTP transport.",
+        error: "Email notifications not configured. Missing relay URL, RESEND_API_KEY, or local SMTP transport.",
       };
     }
 
