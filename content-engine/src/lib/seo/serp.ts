@@ -13,12 +13,9 @@ type SerpApiResponse = {
 };
 
 const SERPAPI_API_KEY = (process.env.SERPAPI_API_KEY ?? "").trim();
+const SEARCHAPI_API_KEY = (process.env.SEARCHAPI_API_KEY ?? "").trim();
 
-export async function fetchSerpResearch(baseTopic: string): Promise<SerpResearch> {
-  if (!SERPAPI_API_KEY) {
-    throw new Error("SERPAPI_API_KEY is not set");
-  }
-
+async function fetchFromSerpApi(baseTopic: string): Promise<SerpApiResponse> {
   const { data } = await axios.get<SerpApiResponse>(
     "https://serpapi.com/search.json",
     {
@@ -33,7 +30,27 @@ export async function fetchSerpResearch(baseTopic: string): Promise<SerpResearch
       timeout: 20000,
     }
   );
+  return data;
+}
 
+async function fetchFromSearchApi(baseTopic: string): Promise<SerpApiResponse> {
+  const { data } = await axios.get<SerpApiResponse>(
+    "https://www.searchapi.io/api/v1/search",
+    {
+      params: {
+        engine: "google",
+        q: baseTopic,
+        hl: "en",
+        gl: "in",
+        api_key: SEARCHAPI_API_KEY,
+      },
+      timeout: 20000,
+    }
+  );
+  return data;
+}
+
+function parseResults(data: SerpApiResponse, baseTopic: string): SerpResearch {
   const relatedSearches = (data.related_searches ?? [])
     .map((item) => item.query?.trim())
     .filter((value): value is string => Boolean(value));
@@ -52,6 +69,43 @@ export async function fetchSerpResearch(baseTopic: string): Promise<SerpResearch
     questions,
     suggestions: dedupe([baseTopic, ...relatedSearches, ...suggestionsFromTitles]),
   };
+}
+
+export async function fetchSerpResearch(baseTopic: string): Promise<SerpResearch> {
+  if (!SERPAPI_API_KEY && !SEARCHAPI_API_KEY) {
+    throw new Error("No SERP API key is configured");
+  }
+
+  // Day-based rotation: even days → SerpAPI, odd days → SearchAPI
+  const daysSinceEpoch = Math.floor(Date.now() / 86400000);
+  const preferSerpApi = daysSinceEpoch % 2 === 0;
+
+  type Fetcher = () => Promise<SerpApiResponse>;
+  const [primary, fallback]: [Fetcher | null, Fetcher | null] = preferSerpApi
+    ? [
+        SERPAPI_API_KEY ? () => fetchFromSerpApi(baseTopic) : null,
+        SEARCHAPI_API_KEY ? () => fetchFromSearchApi(baseTopic) : null,
+      ]
+    : [
+        SEARCHAPI_API_KEY ? () => fetchFromSearchApi(baseTopic) : null,
+        SERPAPI_API_KEY ? () => fetchFromSerpApi(baseTopic) : null,
+      ];
+
+  const primaryFn = primary ?? fallback;
+  const fallbackFn = primary ? fallback : null;
+
+  if (!primaryFn) throw new Error("No valid SERP API key available");
+
+  try {
+    const data = await primaryFn();
+    return parseResults(data, baseTopic);
+  } catch (primaryError) {
+    if (fallbackFn) {
+      const data = await fallbackFn();
+      return parseResults(data, baseTopic);
+    }
+    throw primaryError;
+  }
 }
 
 function dedupe(values: string[]) {

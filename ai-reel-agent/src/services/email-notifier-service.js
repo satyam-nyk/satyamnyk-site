@@ -35,13 +35,14 @@ class EmailNotifierService {
     }
   }
 
-  async sendPostOutcome({ status, subjectPrefix = 'AI Reel Agent', details = {} }) {
+  async sendNotification({ status, subjectPrefix = 'AI Reel Agent', details = {}, lines = [] }) {
     if (!this.enabled) return { sent: false, reason: 'disabled' };
     if (!this.isConfigured || !this.transporter) return { sent: false, reason: 'not_configured' };
 
-    const lines = [
+    const normalizedLines = [
       `Status: ${status}`,
       `Timestamp (UTC): ${new Date().toISOString()}`,
+      ...lines.filter(Boolean),
       details.slotLabel ? `Slot: ${details.slotLabel}` : null,
       details.slotKey ? `Slot Key: ${details.slotKey}` : null,
       details.topic ? `Topic: ${details.topic}` : null,
@@ -57,10 +58,14 @@ class EmailNotifierService {
       from: this.from,
       to: this.recipients.join(', '),
       subject,
-      text: lines.join('\n'),
+      text: normalizedLines.join('\n'),
     });
 
     return { sent: true };
+  }
+
+  async sendPostOutcome({ status, subjectPrefix = 'AI Reel Agent', details = {} }) {
+    return this.sendNotification({ status, subjectPrefix, details });
   }
 }
 

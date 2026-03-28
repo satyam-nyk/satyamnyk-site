@@ -191,6 +191,49 @@ export function createWebhookRouter(
   }
 
   /**
+   * POST /api/webhook/send-email-notification
+   * Generic email relay for other services running outside this host.
+   */
+  router.post('/send-email-notification', verifyWebhookSignature, async (req, res) => {
+    try {
+      if (!emailNotifierService) {
+        return res.status(503).json({ success: false, error: 'Email notifier unavailable' });
+      }
+
+      const status = String(req.body?.status || 'INFO').trim();
+      const subjectPrefix = String(req.body?.subjectPrefix || 'AI Reel Agent').trim();
+      const details = typeof req.body?.details === 'object' && req.body?.details !== null
+        ? req.body.details
+        : {};
+      const lines = Array.isArray(req.body?.lines)
+        ? req.body.lines.map((value) => String(value)).filter(Boolean)
+        : [];
+
+      const result = await emailNotifierService.sendNotification({
+        status,
+        subjectPrefix,
+        details,
+        lines,
+      });
+
+      if (!result.sent) {
+        return res.status(503).json({
+          success: false,
+          error: result.reason || 'Email relay unavailable',
+        });
+      }
+
+      return res.status(200).json({ success: true, sent: true });
+    } catch (error) {
+      console.warn('[Webhook] Relay email notification failed:', error.message);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to relay email notification',
+      });
+    }
+  });
+
+  /**
    * POST /api/webhook/generate-daily-reel
    * Main webhook endpoint for daily reel generation
    * Triggers the full pipeline: research -> script -> video -> post

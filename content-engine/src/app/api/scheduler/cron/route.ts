@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import BlogScheduler from "@/lib/scheduler/blog-scheduler";
+import BlogScheduler, { getDailyThemeSlot } from "@/lib/scheduler/blog-scheduler";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
 
 /**
  * External cron endpoint for blog auto-publishing
@@ -17,21 +20,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Determine today's theme slot in the rotation (AI → PM → History)
+    const themeSlot = getDailyThemeSlot();
+
     // Run the auto-batch
     const scheduler = new BlogScheduler({
       enabled: true,
-      articlesPerRun: Number(process.env.BLOG_ARTICLES_PER_RUN ?? 3),
+      articlesPerRun: Number(process.env.BLOG_ARTICLES_PER_RUN ?? 1),
       publishToDevto: String(process.env.BLOG_PUBLISH_DEVTO ?? "true").toLowerCase() === "true",
     });
 
-    const result = await scheduler.runAutoBatch();
+    const result = await scheduler.runAutoBatch(themeSlot);
 
     return NextResponse.json({
       success: result.success,
       articlesGenerated: result.articlesGenerated,
       articlesPublished: result.articlesPublished,
       duration: result.duration,
-      message: result.error || "Auto-batch completed successfully",
+      articleLinks: result.articleLinks ?? [],
+      emailSent: result.emailSent ?? false,
+      emailError: result.emailError,
+      themeSlot,
+      message: result.error || `Auto-batch completed successfully (theme: ${themeSlot})`,
     });
   } catch (error) {
     console.error("[Cron] Error:", error);

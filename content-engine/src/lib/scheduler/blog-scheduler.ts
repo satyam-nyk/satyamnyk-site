@@ -4,7 +4,15 @@ import { blogTheme } from "@/lib/config/blogTheme";
 import { publishToDevto } from "@/lib/devto/publish";
 import { generateCluster } from "@/lib/seo/generateCluster";
 import { generateTopicIdeas } from "@/lib/seo/generateTopicIdeas";
-import type { TopicIdea } from "@/lib/seo/generateTopicIdeas";
+import type { TopicIdea, ThemeSlot } from "@/lib/seo/generateTopicIdeas";
+
+// Rotation order: 0=AI, 1=PM, 2=History
+const THEME_ROTATION: ThemeSlot[] = ["ai", "pm", "history"];
+
+export function getDailyThemeSlot(): ThemeSlot {
+  const daysSinceEpoch = Math.floor(Date.now() / 86400000);
+  return THEME_ROTATION[daysSinceEpoch % THEME_ROTATION.length];
+}
 import { fetchSerpResearch, type SerpResearch } from "@/lib/seo/serp";
 import { connectToDb } from "@/lib/services/db";
 import { estimateReadingTime, makeSlug } from "@/lib/utils/slug";
@@ -20,6 +28,8 @@ interface SchedulerConfig {
   smtpPass?: string;
   emailFrom?: string;
   emailTo?: string[];
+  relayUrl?: string;
+  relaySecret?: string;
   articlesPerRun: number;
   publishToDevto: boolean;
 }
@@ -29,7 +39,16 @@ interface ScheduleResult {
   articlesGenerated: number;
   articlesPublished: number;
   duration: number;
+  articleLinks?: string[];
+  emailSent?: boolean;
+  emailError?: string;
   error?: string;
+}
+
+const SMTP_RETRYABLE_ERRORS = ["EBUSY", "ENOTFOUND", "EAI_AGAIN", "ETIMEDOUT", "ECONNRESET"];
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 class BlogScheduler {
@@ -49,6 +68,8 @@ class BlogScheduler {
       emailFrom: config?.emailFrom ?? process.env.EMAIL_FROM ?? process.env.SMTP_USER,
       emailTo: config?.emailTo ?? 
         String(process.env.EMAIL_TO ?? "").split(",").map(e => e.trim()).filter(Boolean),
+      relayUrl: config?.relayUrl ?? process.env.REEL_AGENT_EMAIL_RELAY_URL,
+      relaySecret: config?.relaySecret ?? process.env.REEL_AGENT_WEBHOOK_SECRET,
       articlesPerRun: config?.articlesPerRun ?? 3,
       publishToDevto: config?.publishToDevto ?? blogTheme.settings.publishToDevtoByDefault,
     };
@@ -118,32 +139,109 @@ class BlogScheduler {
   }
 
   private async sendEmail(status: "SUCCESS" | "FAILURE", details: ScheduleResult) {
-    if (!this.transporter || !this.config.emailTo?.length) return;
+    const articleLines = (details.articleLinks ?? []).map((link) => `Article: ${link}`);
+    const lines = [
+      `Articles Generated: ${details.articlesGenerated}`,
+      `Articles Published: ${details.articlesPublished}`,
+      `Duration: ${Math.round(details.duration / 1000)}s`,
+      ...articleLines,
+      details.error ? `Error: ${details.error}` : null,
+    ].filter(Boolean);
+
+    if (this.config.relayUrl) {
+      try {
+        const response = await fetch(this.config.relayUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(this.config.relaySecret
+              ? { Authorization: `Bearer ${this.config.relaySecret}` }
+              : {}),
+          },
+          body: JSON.stringify({
+            status,
+            subjectPrefix: "AI Product Signals Auto-Blog",
+            details: {
+              durationMs: details.duration,
+              error: details.error,
+            },
+            lines,
+          }),
+        });
+
+        if (response.ok) {
+          return { sent: true };
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        return {
+          sent: false,
+          error: String(payload.error || `Relay request failed with status ${response.status}`),
+        };
+      } catch (error) {
+        return {
+          sent: false,
+          error: error instanceof Error ? error.message : "Relay request failed",
+        };
+      }
+    }
+
+    if (!this.transporter || !this.config.emailTo?.length) {
+      return {
+        sent: false,
+        error: "Email notifications not configured. Missing REEL_AGENT_EMAIL_RELAY_URL or local SMTP transport.",
+      };
+    }
 
     try {
       const emailBody = [
         `Status: ${status}`,
         `Timestamp (UTC): ${new Date().toISOString()}`,
-        `Articles Generated: ${details.articlesGenerated}`,
-        `Articles Published: ${details.articlesPublished}`,
-        `Duration: ${Math.round(details.duration / 1000)}s`,
-        details.error ? `Error: ${details.error}` : null,
+        ...lines,
       ]
         .filter(Boolean)
         .join("\n");
 
-      await this.transporter.sendMail({
+      const mailOptions = {
         from: this.config.emailFrom,
         to: this.config.emailTo?.join(", "),
         subject: `[AI Product Signals Auto-Blog] ${status}`,
         text: emailBody,
-      });
+      };
+
+      let lastError: unknown = null;
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          await this.transporter.sendMail(mailOptions);
+          return { sent: true };
+        } catch (error) {
+          lastError = error;
+          const errorCode =
+            typeof error === "object" && error !== null && "code" in error
+              ? String((error as { code?: unknown }).code ?? "")
+              : "";
+
+          if (!SMTP_RETRYABLE_ERRORS.includes(errorCode) || attempt === 3) {
+            throw error;
+          }
+
+          await wait(1000 * attempt);
+        }
+      }
+
+      throw lastError instanceof Error ? lastError : new Error("Failed to send email");
     } catch (error) {
       console.error("[BlogScheduler] Email send failed:", error);
+
+      return {
+        sent: false,
+        error: error instanceof Error ? error.message : "Failed to send email",
+      };
     }
   }
 
-  async runAutoBatch(): Promise<ScheduleResult> {
+  async runAutoBatch(themeSlot?: ThemeSlot): Promise<ScheduleResult> {
     if (this.isRunning) {
       return {
         success: false,
@@ -156,6 +254,7 @@ class BlogScheduler {
 
     this.isRunning = true;
     const startTime = Date.now();
+    const resolvedSlot = themeSlot ?? getDailyThemeSlot();
 
     try {
       await connectToDb();
@@ -167,9 +266,11 @@ class BlogScheduler {
         .lean()
         .limit(12);
 
-      // 2. Generate topic ideas
+      // 2. Generate topic ideas constrained to today's theme slot
+      console.log(`[BlogScheduler] Theme slot for today: ${resolvedSlot}`);
       const ideas = await generateTopicIdeas(
-        recentClusters.map((c) => c.baseTopic)
+        recentClusters.map((c) => c.baseTopic),
+        resolvedSlot
       );
 
       if (ideas.length === 0) {
@@ -178,6 +279,8 @@ class BlogScheduler {
 
       let articlesGenerated = 0;
       let articlesPublished = 0;
+      const articleLinks: string[] = [];
+      const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://blog.satyamnyk.com").trim();
 
       // 3. Process up to articlesPerRun topics
       for (let i = 0; i < Math.min(ideas.length, this.config.articlesPerRun); i++) {
@@ -234,11 +337,11 @@ class BlogScheduler {
           });
 
           articlesGenerated++;
+          articleLinks.push(`${siteUrl}/blog/${article.slug}`);
 
           // Optionally publish to Dev.to
           if (this.config.publishToDevto) {
             try {
-              const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://blog.satyamnyk.com";
               await publishToDevto({
                 title: article.title,
                 htmlContent: article.content,
@@ -265,9 +368,12 @@ class BlogScheduler {
         articlesGenerated,
         articlesPublished,
         duration,
+        articleLinks,
       };
 
-      await this.sendEmail("SUCCESS", result);
+      const emailResult = await this.sendEmail("SUCCESS", result);
+      result.emailSent = emailResult.sent;
+      result.emailError = emailResult.error;
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -277,10 +383,13 @@ class BlogScheduler {
         articlesGenerated: 0,
         articlesPublished: 0,
         duration,
+        articleLinks: [],
         error: errorMsg,
       };
 
-      await this.sendEmail("FAILURE", result);
+      const emailResult = await this.sendEmail("FAILURE", result);
+      result.emailSent = emailResult.sent;
+      result.emailError = emailResult.error;
       return result;
     } finally {
       this.isRunning = false;
@@ -299,13 +408,15 @@ class BlogScheduler {
 
     const scheduleNext = () => {
       const { nextRun, delay } = this.getScheduleTime();
+      const slot = getDailyThemeSlot();
       console.log(
-        `[BlogScheduler] Next scheduled run: ${nextRun.toISOString()} (in ${Math.round(delay / 1000 / 60)} minutes)`
+        `[BlogScheduler] Next scheduled run: ${nextRun.toISOString()} (in ${Math.round(delay / 1000 / 60)} minutes) — theme: ${slot}`
       );
 
       this.schedulerTimeout = setTimeout(async () => {
-        console.log("[BlogScheduler] Starting auto-batch run...");
-        await this.runAutoBatch();
+        const currentSlot = getDailyThemeSlot();
+        console.log(`[BlogScheduler] Starting auto-batch run — theme: ${currentSlot}`);
+        await this.runAutoBatch(currentSlot);
         scheduleNext();
       }, delay);
     };
